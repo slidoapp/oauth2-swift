@@ -91,11 +91,6 @@ open class OAuth2Securable: OAuth2Requestable {
 			verbose = verb
 		}
 		super.init(verbose: verbose)
-		
-		// init from keychain
-		if useKeychain {
-			updateFromKeychain()
-		}
 	}
 	
 	
@@ -106,6 +101,13 @@ open class OAuth2Securable: OAuth2Requestable {
 		return "http://localhost"
 	}
 	
+	public func tryInitFromKeychain() {
+		// init from keychain
+		if useKeychain {
+			updateFromKeychain()
+		}
+	}
+
 	/** Queries the keychain for tokens stored for the receiver's authorize URL, and updates the token properties accordingly. */
 	private func updateFromKeychain() {
 		logger?.debug("OAuth2", msg: "Looking for items in keychain")
