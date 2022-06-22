@@ -105,6 +105,11 @@ open class OAuth2: OAuth2Base {
 			callback(nil, OAuth2Error.alreadyAuthorizing)
 			return
 		}
+
+		if (isExchangingRefreshToken) {
+			callback(nil, OAuth2Error.exchangingRefreshToken)
+			return
+		}
 		
 		didAuthorizeOrFail = callback
 		logger?.debug("OAuth2", msg: "Starting authorization")
@@ -149,6 +154,12 @@ open class OAuth2: OAuth2Base {
 			callback(nil, OAuth2Error.alreadyAuthorizing)
 			return
 		}
+		
+		if (isExchangingRefreshToken) {
+			callback(nil, OAuth2Error.exchangingRefreshToken)
+			return
+		}
+		
 		authConfig.authorizeEmbedded = true
 		authConfig.authorizeContext = context
 		authorize(params: params, callback: callback)
@@ -390,6 +401,97 @@ open class OAuth2: OAuth2Base {
 			}
 		}
 		catch let error {
+			callback(nil, error.asOAuth2Error)
+		}
+	}
+	
+	// MARK: - Exchange Refresh Token
+	
+	/**
+	Generate the request to be used for token exchange when we have a refresh token.
+	
+	This will set "grant_type" to "urn:ietf:params:oauth:grant-type:token-exchange" add the refresh token, and take care of the remaining parameters.
+	
+	- parameter audienceClientId: The client ID of the audience requesting for its own refresh token
+	- parameter params:           Additional parameters to pass during refresh token exchange
+	- returns:                    An `OAuth2AuthRequest` instance that is configured for refresh token exchange
+	*/
+	open func tokenRequestForExchangeRefreshToken(audienceClientId: String, params: OAuth2StringDict? = nil) throws -> OAuth2AuthRequest {
+		guard let refreshToken = clientConfig.refreshToken, !refreshToken.isEmpty else {
+			throw OAuth2Error.noRefreshToken
+		}
+
+		let req = OAuth2AuthRequest(url: (clientConfig.tokenURL ?? clientConfig.authorizeURL))
+		req.params["grant_type"] = "urn:ietf:params:oauth:grant-type:token-exchange"
+		req.params["audience"] = audienceClientId
+		req.params["requested_token_type"] = "urn:ietf:params:oauth:token-type:refresh_token"
+		req.params["subject_token"] = refreshToken
+		req.params["subject_token_type"] = "urn:ietf:params:oauth:token-type:refresh_token"
+		req.add(params: params)
+
+		return req
+	}
+    
+    /**
+    Echanges the subject 'srefresh token for audience client.
+    see: https://datatracker.ietf.org/doc/html/rfc8693
+    see: https://www.scottbrady91.com/oauth/delegation-patterns-for-oauth-20
+    - parameter audienceClientId: The client ID of the audience requesting for its own refresh token
+    - parameter params: Optional key/value pairs to pass during token exhange
+    - parameter callback: The callback to call after the exchange of refresh token has finished
+    */
+    open func doExchangeRefreshToken(audienceClientId: String, params: OAuth2StringDict? = nil, callback: @escaping ((String?, OAuth2Error?) -> Void)) {
+		do {
+			guard !self.isExchangingRefreshToken else {
+				throw OAuth2Error.generic("The client is already exchanging the refresh token")
+			}
+			self.isExchangingRefreshToken = true
+
+			let post = try tokenRequestForExchangeRefreshToken(audienceClientId: audienceClientId, params: params).asURLRequest(for: self)
+			logger?.debug("OAuth2", msg: "Exchanging refresh token for client with ID \(audienceClientId) from \(post.url?.description ?? "nil")")
+
+			perform(request: post) { response in
+				do {
+					let data = try response.responseData()
+					let json = try self.parseExchangeRefreshTokenResponseData(data)
+					if response.response.statusCode >= 400 {
+						self.clientConfig.refreshToken = nil
+						throw OAuth2Error.generic("Failed with status \(response.response.statusCode)")
+					}
+
+					// The `access_token` field contains the `requested_token_type` = the exchanged (audience) refresh token in our case.
+					//
+					// Explanation:
+					// The security token issued by the authorization server in response to the token exchange request. The access_token parameter
+					// from Section 5.1 of [RFC6749] is used here to carry the requested token, which allows this token exchange protocol to use the
+					// existing OAuth 2.0 request and response constructs defined for the token endpoint.
+					// **The identifier access_token is used for historical reasons and the issued token need not be an OAuth access token.**
+					// See: https://tools.ietf.org/id/draft-ietf-oauth-token-exchange-12.html#rfc.section.2.2.1
+					guard let exchangedRefreshToken = json["access_token"] as? String else {
+						throw OAuth2Error.generic("Exchange refresh token didn't return exhanged refresh token (response.access_token)")
+					}
+					self.logger?.debug("OAuth2", msg: "Did use refresh token for exchanging refresh token [\(exchangedRefreshToken)]")
+					if self.useKeychain {
+						self.storeTokensToKeychain()
+					}
+					self.isExchangingRefreshToken = false
+					callback(exchangedRefreshToken, nil)
+				} catch let error {
+					self.logger?.debug("OAuth2", msg: "Error exchanging refresh token: \(error)")
+					self.isExchangingRefreshToken = false
+					
+					let err = error.asOAuth2Error
+					if (err == .invalidGrant("refresh_token: jwt expired")) {
+						self.logger?.debug("OAuth2", msg: "Refresh token is expired, forgetting the stored tokens...")
+						self.forgetTokens()
+					}
+					
+					callback(nil, err)
+				}
+			}
+		} catch let error {
+			self.logger?.debug("OAuth2", msg: "Error exchanging refresh token: \(error)")
+			self.isExchangingRefreshToken = false
 			callback(nil, error.asOAuth2Error)
 		}
 	}
