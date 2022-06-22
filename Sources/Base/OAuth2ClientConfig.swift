@@ -210,9 +210,11 @@ open class OAuth2ClientConfig {
 	- returns: A storable dictionary with token data
 	*/
 	func storableTokenItems() -> [String: Any]? {
-		guard let access = accessToken, !access.isEmpty else { return nil }
-		
-		var items: [String: Any] = ["accessToken": access]
+		var items = [String: Any]()
+
+		if let access = accessToken {
+			items["accessToken"] = access
+		}
 		if let date = accessTokenExpiry, date == (date as NSDate).laterDate(Date()) {
 			items["accessTokenDate"] = date
 		}
