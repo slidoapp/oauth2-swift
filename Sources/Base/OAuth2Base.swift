@@ -130,6 +130,9 @@ open class OAuth2Base: OAuth2Securable {
 		return nil != didAuthorizeOrFail
 	}
 	
+	/// Returns true if the receiver is currently exchanging the refresh token.
+	public final var isExchangingRefreshToken: Bool = false
+	
 	/**
 	Closure called after the regular authorization callback, on the main thread. You can use this callback when you're performing
 	authorization manually and/or for cleanup operations.
@@ -402,6 +405,34 @@ open class OAuth2Base: OAuth2Securable {
 		try assureRefreshTokenParamsAreValid(dict)
 		
 		clientConfig.updateFromResponse(normalizeRefreshTokenResponseKeys(dict))
+		return dict
+	}
+	
+	/**
+	Parse response data returned while exchanging a refresh token.
+	
+	This method extracts token data, expected to be JSON, and fills the receiver's properties accordingly. If the response contains an
+	"error" key, will parse the error and throw it.
+
+	- parameter data: NSData returned from the call
+	- returns: An OAuth2JSON instance with token data; may contain additional information
+	*/
+	open func parseExchangeRefreshTokenResponseData(_ data: Data) throws -> OAuth2JSON {
+		let dict = try parseJSON(data)
+		return try parseExchangeRefreshTokenResponse(dict)
+	}
+	
+	final func parseExchangeRefreshTokenResponse(_ dict: OAuth2JSON) throws -> OAuth2JSON {
+		try assureNoErrorInResponse(dict)
+		try assureCorrectBearerType(dict)
+		try assureRefreshTokenParamsAreValid(dict)
+
+		// Update the subject's refresh token (as the old one is invalidated
+		// during the exchange process). Do not process other fields like
+		// `access_token` - it contains the token exchanged for the audience.
+		if let refreshToken = dict["refresh_token"] as? String {
+			self.clientConfig.refreshToken = refreshToken
+		}
 		return dict
 	}
 	
