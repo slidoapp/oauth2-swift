@@ -4,6 +4,9 @@ Changelog
 Version numbering represents the Swift version, plus a running number representing updates, fixes and new features at the same time.
 You can also refer to commit logs to get details on what was implemented, fixed and improved.
 
+#### 5.4.0-slido
+- Add the device authorization grant flow [PS-17876](https://sli-do.atlassian.net/browse/PS-17876)
+
 #### 5.3.2
 
 - Fix tvOS build.
