@@ -95,14 +95,14 @@ open class OAuth2DeviceGrant: OAuth2 {
 				return
 			}
 			
-			if (useNonTextualTransmission) {
-				guard let verificationUriComplete = result["verification_uri_complete"] as? String,
-					  let verificationUrlComplete = URL(string: verificationUriComplete) else {
-					return
-				}
-				
+			var verificationUrlComplete: URL?
+			if let verificationUriComplete = result["verification_uri_complete"] as? String {
+				verificationUrlComplete = URL(string: verificationUriComplete)
+			}
+			
+			if useNonTextualTransmission, let url = verificationUrlComplete {
 				do {
-					try self.authorizer.openAuthorizeURLInBrowser(verificationUrlComplete)
+					try self.authorizer.openAuthorizeURLInBrowser(url)
 				} catch let error {
 					completion(nil, error)
 				}
@@ -118,7 +118,7 @@ open class OAuth2DeviceGrant: OAuth2 {
 				}
 			}
 			
-			let deviceAuthorization = DeviceAuthorization(userCode: userCode, verificationUrl: verificationUrl, expiresIn: expiresIn)
+			let deviceAuthorization = DeviceAuthorization(userCode: userCode, verificationUrl: verificationUrl, verificationUrlComplete: verificationUrlComplete, expiresIn: expiresIn)
 			completion(deviceAuthorization, nil)
 		}
 	}
@@ -182,7 +182,8 @@ open class OAuth2DeviceGrant: OAuth2 {
 }
 
 public struct DeviceAuthorization {
-	let userCode: String
-	let verificationUrl: URL
-	let expiresIn: Int
+	public let userCode: String
+	public let verificationUrl: URL
+	public let verificationUrlComplete: URL?
+	public let expiresIn: Int
 }
