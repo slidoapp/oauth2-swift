@@ -23,7 +23,7 @@ import Foundation
 import Base
 #endif
 
-/// https://www.rfc-editor.org/rfc/rfc8628
+/// https://www.ietf.org/rfc/rfc8628.html
 open class OAuth2DeviceGrant: OAuth2 {
 	override open class var grantType: String {
 		return "urn:ietf:params:oauth:grant-type:device_code"
@@ -32,9 +32,7 @@ open class OAuth2DeviceGrant: OAuth2 {
 	override open class var responseType: String? {
 		return ""
 	}
-	
-	// MARK: - Token request
-	
+		
 	open func deviceAccessTokenRequest(with deviceCode: String) throws -> OAuth2AuthRequest {
 		guard let clientId = clientConfig.clientId, !clientId.isEmpty else {
 			throw OAuth2Error.noClientId
@@ -77,7 +75,6 @@ open class OAuth2DeviceGrant: OAuth2 {
 		return params
 	}
 	
-	// custom
 	public func start(useNonTextualTransmission: Bool = false, completion: @escaping (DeviceAuthorization?, Error?) -> Void) {
 		authorizeDevice { result, error in
 			guard let result else {
@@ -111,7 +108,7 @@ open class OAuth2DeviceGrant: OAuth2 {
 				}
 			}
 			
-			let pollingInterval = result["interval"] as? TimeInterval ?? 5 // TODO: use Int instead?
+			let pollingInterval = result["interval"] as? TimeInterval ?? 5
 			self.getDeviceAccessToken(deviceCode: deviceCode, interval: pollingInterval) { params, error in
 				if let params {
 					self.didAuthorize(withParameters: params)
@@ -151,8 +148,6 @@ open class OAuth2DeviceGrant: OAuth2 {
 		do {
 			let post = try deviceAccessTokenRequest(with: deviceCode).asURLRequest(for: self)
 			logger?.debug("OAuth2", msg: "Obtaining access token for device with code \(deviceCode) from \(post.url!)")
-			
-			// TODO: check if not expired
 			
 			perform(request: post) { response in
 				do {
