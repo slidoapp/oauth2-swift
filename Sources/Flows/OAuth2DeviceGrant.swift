@@ -89,7 +89,7 @@ open class OAuth2DeviceGrant: OAuth2 {
 				  let verificationUri = result["verification_uri"] as? String,
 				  let verificationUrl = URL(string: verificationUri),
 				  let expiresIn = result["expires_in"] as? Int else {
-				let error = OAuth2Error.generic("The response doesn't conttain all required fields.")
+				let error = OAuth2Error.generic("The response doesn't contain all required fields.")
 				self.logger?.warn("OAuth2", msg: String(describing: error))
 				completion(nil, error)
 				return
