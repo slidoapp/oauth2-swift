@@ -431,16 +431,16 @@ open class OAuth2: OAuth2Base {
 
 		return req
 	}
-    
-    /**
-    Echanges the subject 'srefresh token for audience client.
-    see: https://datatracker.ietf.org/doc/html/rfc8693
-    see: https://www.scottbrady91.com/oauth/delegation-patterns-for-oauth-20
-    - parameter audienceClientId: The client ID of the audience requesting for its own refresh token
-    - parameter params: Optional key/value pairs to pass during token exhange
-    - parameter callback: The callback to call after the exchange of refresh token has finished
-    */
-    open func doExchangeRefreshToken(audienceClientId: String, params: OAuth2StringDict? = nil, callback: @escaping ((String?, OAuth2Error?) -> Void)) {
+
+	/**
+	Echanges the subject 'srefresh token for audience client.
+	see: https://datatracker.ietf.org/doc/html/rfc8693
+	see: https://www.scottbrady91.com/oauth/delegation-patterns-for-oauth-20
+	- parameter audienceClientId: The client ID of the audience requesting for its own refresh token
+	- parameter params: Optional key/value pairs to pass during token exhange
+	- parameter callback: The callback to call after the exchange of refresh token has finished
+	*/
+	open func doExchangeRefreshToken(audienceClientId: String, params: OAuth2StringDict? = nil, callback: @escaping ((String?, OAuth2Error?) -> Void)) {
 		do {
 			guard !self.isExchangingRefreshToken else {
 				throw OAuth2Error.generic("The client is already exchanging the refresh token")
@@ -480,13 +480,7 @@ open class OAuth2: OAuth2Base {
 					self.logger?.debug("OAuth2", msg: "Error exchanging refresh token: \(error)")
 					self.isExchangingRefreshToken = false
 					
-					let err = error.asOAuth2Error
-					if (err == .invalidGrant("refresh_token: jwt expired")) {
-						// Refresh token is expired, so delete all stored tokens
-						self.forgetTokens()
-					}
-					
-					callback(nil, err)
+					callback(nil, error.asOAuth2Error)
 				}
 			}
 		} catch let error {
