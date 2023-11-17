@@ -468,7 +468,7 @@ open class OAuth2: OAuth2Base {
 					// **The identifier access_token is used for historical reasons and the issued token need not be an OAuth access token.**
 					// See: https://tools.ietf.org/id/draft-ietf-oauth-token-exchange-12.html#rfc.section.2.2.1
 					guard let exchangedRefreshToken = json["access_token"] as? String else {
-						throw OAuth2Error.generic("Exchange refresh token didn't return exhanged refresh token (response.access_token)")
+						throw OAuth2Error.generic("Exchange refresh token didn't return exchanged refresh token (response.access_token)")
 					}
 					self.logger?.debug("OAuth2", msg: "Did use refresh token for exchanging refresh token [\(exchangedRefreshToken)]")
 					if self.useKeychain {
@@ -489,7 +489,57 @@ open class OAuth2: OAuth2Base {
 			callback(nil, error.asOAuth2Error)
 		}
 	}
-	
+    
+    // MARK: - Exchange Access Token For Resource
+    open func tokenRequestForExchangeAccessTokenForResource(resourceId: String, resourceType: Oauth2ResourceType, params: OAuth2StringDict? = nil) throws -> OAuth2AuthRequest {
+        guard let accessToken = clientConfig.accessToken, !accessToken.isEmpty else {
+            throw OAuth2Error.noAccessToken
+        }
+        guard let resourceUrl = clientConfig.resourceURL, !resourceUrl.absoluteString.isEmpty else {
+            throw OAuth2Error.noResourceURL
+        }
+        let req = OAuth2AuthRequest(url: (clientConfig.tokenURL ?? clientConfig.authorizeURL))
+        req.params["grant_type"] = "urn:ietf:params:oauth:grant-type:token-exchange"
+        req.params["client_id"] = clientConfig.clientId
+        req.params["resource"] = resourceUrl.absoluteString + "/" + resourceType.description + "/" + resourceId
+        req.params["requested_token_type"] = "urn:ietf:params:oauth:token-type:access_token"
+        req.params["subject_token"] = accessToken
+        req.params["subject_token_type"] = "urn:ietf:params:oauth:token-type:access_token"
+        req.params["scope"] = clientConfig.scope
+        req.add(params: params)
+
+        return req
+    }
+    
+    open func doExchangeAccessTokenForResource(resourceId: String, resourceType: Oauth2ResourceType, params: OAuth2StringDict? = nil, callback: @escaping ((String?, OAuth2Error?) -> Void)) throws {
+        do {
+            let post = try tokenRequestForExchangeAccessTokenForResource(resourceId: resourceId, resourceType: resourceType, params: params).asURLRequest(for: self)
+            logger?.debug("OAuth2", msg: "Exchanging access token for resource \(resourceType.description) with ID \(resourceId) from \(post.url?.description ?? "nil")")
+            perform(request: post) { response in
+                do {
+                    let data = try response.responseData()
+                    let json = try self.parseAccessTokenResponse(data: data)
+                    if response.response.statusCode >= 400 {
+                        self.clientConfig.accessToken = nil
+                        throw OAuth2Error.generic("Failed with status \(response.response.statusCode)")
+                    }
+                    guard let exchangedAccessToken = json["access_token"] as? String else {
+                        throw OAuth2Error.generic("Exchange access token for resource didn't return exchanged access token (response.access_token)")
+                    }
+                    callback(exchangedAccessToken, nil)
+                } catch let error {
+                    self.logger?.warn("OAuth2", msg: "Error exchanging access token for resource: \(error)")
+                    
+                    let err = error.asOAuth2Error
+                    
+                    callback(nil, err)
+                }
+            }
+        } catch let error {
+            self.logger?.debug("OAuth2", msg: "Error exchanging access token for resource \(resourceType.description) with ID \(resourceId): \(error)")
+            callback(nil, error.asOAuth2Error)
+        }
+    }
 	
 	// MARK: - Registration
 	
@@ -525,3 +575,25 @@ open class OAuth2: OAuth2Base {
 	}
 }
 
+public enum Oauth2ResourceType: Int, CustomStringConvertible {
+    
+    /// Event resourrce type
+    case event = 0
+    
+    /// Organization resource type
+    case organization
+    
+    /// Teamspace  resource type
+    case teamspace
+
+    public var description: String {
+        switch self {
+        case .event:
+            return "events"
+        case .organization:
+            return "accounts"
+        case .teamspace:
+            return "teamspaces"
+        }
+    }
+}

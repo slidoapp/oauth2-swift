@@ -37,7 +37,10 @@ open class OAuth2ClientConfig {
 	
 	/// Where a logo/icon for the app can be found.
 	public final var logoURL: URL?
-	
+
+    /// The URL used for constructing target for resource aware tokens
+    open var resourceURL: URL?
+
 	/// The scope currently in use.
 	open var scope: String?
 	
@@ -61,7 +64,7 @@ open class OAuth2ClientConfig {
 	
 	/// The receiver's long-time refresh token.
 	open var refreshToken: String?
-	
+
 	/// The URL to register a client against.
 	public final var registrationURL: URL?
 	
@@ -130,6 +133,9 @@ open class OAuth2ClientConfig {
 		if let logo = settings["logo_uri"] as? String {
 			logoURL = URL(string: logo)
 		}
+        if let resource = settings["resource_uri"] as? String {
+            resourceURL = URL(string: resource)
+        }
 		
 		// client authorization options
 		scope = settings["scope"] as? String
