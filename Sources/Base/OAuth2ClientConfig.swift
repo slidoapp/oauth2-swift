@@ -38,8 +38,8 @@ open class OAuth2ClientConfig {
 	/// Where a logo/icon for the app can be found.
 	public final var logoURL: URL?
 
-	/// The URL used for constructing target for resource aware tokens
-	open var resourceURL: URL?
+	/// The URL used for constructing target for resource-aware tokens.
+	public final var resourceURL: URL?
 
 	/// The scope currently in use.
 	open var scope: String?

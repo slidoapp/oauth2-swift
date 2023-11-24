@@ -52,7 +52,7 @@ public enum OAuth2Error: Error, CustomStringConvertible, Equatable {
 	/// There is no redirect URL.
 	case noRedirectURL
 
-	/// There is no resource url.
+	/// There is no resource URL.
 	case noResourceURL
 
 	/// There is no username.
@@ -331,6 +331,7 @@ public enum OAuth2Error: Error, CustomStringConvertible, Equatable {
 		case (.noClientSecret, .noClientSecret):                     return true
 		case (.noDeviceCodeURL, .noDeviceCodeURL):                   return true
 		case (.noRedirectURL, .noRedirectURL):                       return true
+		case (.noResourceURL, .noResourceURL):                       return true
 		case (.noUsername, .noUsername):                             return true
 		case (.noPassword, .noPassword):                             return true
 		case (.alreadyAuthorizing, .alreadyAuthorizing):             return true
