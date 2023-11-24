@@ -25,6 +25,9 @@ import Base
 
 /// https://www.ietf.org/rfc/rfc8628.html
 open class OAuth2DeviceGrant: OAuth2 {
+    /// If non-nil, will be called verification_uri_complete is received, giving you a chance to transfer the url
+    public final var onTransformVerificationUrl: ((String) -> String)?
+    
 	override open class var grantType: String {
 		return "urn:ietf:params:oauth:grant-type:device_code"
 	}
@@ -97,7 +100,11 @@ open class OAuth2DeviceGrant: OAuth2 {
 			
 			var verificationUrlComplete: URL?
 			if let verificationUriComplete = result["verification_uri_complete"] as? String {
-				verificationUrlComplete = URL(string: verificationUriComplete)
+                if let transform = self.onTransformVerificationUrl {
+                    verificationUrlComplete = URL(string: transform(verificationUriComplete))
+                } else {
+                    verificationUrlComplete = URL(string: verificationUriComplete)
+                }
 			}
 			
 			if useNonTextualTransmission, let url = verificationUrlComplete {
