@@ -3,7 +3,7 @@
 //  OAuth2
 //
 //  Created by Dominik Paľo on 4/12/23.
-//  Copyright 2023 Dominik Paľo
+//  Copyright © 2023 Cisco Systems, Inc. All rights reserved.
 //
 //  Licensed under the Apache License, Version 2.0 (the "License");
 //  you may not use this file except in compliance with the License.
