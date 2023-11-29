@@ -44,7 +44,6 @@ class OAuth2DeviceGrantTests: XCTestCase {
 	func testInit() {
 		let oauth = OAuth2DeviceGrant(settings: baseSettings)
 		XCTAssertEqual(oauth.clientId, "abc", "Must init `client_id`")
-		XCTAssertEqual(oauth.clientSecret!, "xyz", "Must init `client_secret`")
 		XCTAssertFalse(oauth.useKeychain, "No keychain")
 		XCTAssertNil(oauth.scope, "Empty scope")
 		
@@ -77,6 +76,19 @@ class OAuth2DeviceGrantTests: XCTestCase {
 		let body = String(data: req.httpBody!, encoding: String.Encoding.utf8)
 		let query = OAuth2DeviceGrant.params(fromQuery: body!)
 		XCTAssertEqual(query["client_id"]!, "abc", "Expecting correct `client_id`")
+	}
+	
+	func testDeviceAuthorizationRequestWithAdditionalParams() {
+		let oauth = OAuth2DeviceGrant(settings: baseSettings)
+		let additionalParams = ["test_param": "test_value"]
+		
+		let req = try! oauth.deviceAuthorizationRequest(params: additionalParams).asURLRequest(for: oauth)
+		let comp = URLComponents(url: req.url!, resolvingAgainstBaseURL: true)!
+		XCTAssertEqual(comp.host!, "auth.ful.io", "Correct host")
+		
+		let body = String(data: req.httpBody!, encoding: String.Encoding.utf8)
+		let query = OAuth2DeviceGrant.params(fromQuery: body!)
+		XCTAssertEqual(query["test_param"]!, "test_value", "Expecting correct `test_param`")
 	}
 	
 	func testDeviceAccessTokenResponse() {

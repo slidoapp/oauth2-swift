@@ -45,7 +45,7 @@ open class OAuth2DeviceGrant: OAuth2 {
 		return req
 	}
 	
-	open func deviceAuthorizationRequest() throws -> OAuth2AuthRequest {
+	open func deviceAuthorizationRequest(params: OAuth2StringDict? = nil) throws -> OAuth2AuthRequest {
 		guard let clientId = clientConfig.clientId, !clientId.isEmpty else {
 			throw OAuth2Error.noClientId
 		}
@@ -56,10 +56,10 @@ open class OAuth2DeviceGrant: OAuth2 {
 		
 		let req = OAuth2AuthRequest(url: url)
 		req.params["client_id"] = clientId
-		
 		if let scope = clientConfig.scope {
 			req.params["scope"] = scope
 		}
+		req.add(params: params)
 		
 		return req
 	}
@@ -75,8 +75,14 @@ open class OAuth2DeviceGrant: OAuth2 {
 		return params
 	}
 	
-	public func start(useNonTextualTransmission: Bool = false, completion: @escaping (DeviceAuthorization?, Error?) -> Void) {
-		authorizeDevice { result, error in
+	/**
+	Start the device authorization flow.
+	
+	- parameter params:   Optional key/value pairs to pass during authorize device request
+	- parameter callback: The callback to call after the device authorization response has been received
+	*/
+	public func start(useNonTextualTransmission: Bool = false, params: OAuth2StringDict? = nil, completion: @escaping (DeviceAuthorization?, Error?) -> Void) {
+		authorizeDevice(params: params) { result, error in
 			guard let result else {
 				if let error {
 					self.logger?.warn("OAuth2", msg: "Unable to get device code: \(error)")
@@ -85,10 +91,11 @@ open class OAuth2DeviceGrant: OAuth2 {
 				return
 			}
 			
-			guard let deviceCode = result["device_code"] as? String,let userCode = result["user_code"] as? String,
-				  let verificationUri = result["verification_uri"] as? String,
-				  let verificationUrl = URL(string: verificationUri),
-				  let expiresIn = result["expires_in"] as? Int else {
+			guard let deviceCode = result["device_code"] as? String,
+				let userCode = result["user_code"] as? String,
+				let verificationUri = result["verification_uri"] as? String,
+				let verificationUrl = URL(string: verificationUri),
+				let expiresIn = result["expires_in"] as? Int else {
 				let error = OAuth2Error.generic("The response doesn't contain all required fields.")
 				self.logger?.warn("OAuth2", msg: String(describing: error))
 				completion(nil, error)
@@ -123,9 +130,9 @@ open class OAuth2DeviceGrant: OAuth2 {
 		}
 	}
 	
-	private func authorizeDevice(completion: @escaping (OAuth2JSON?, Error?) -> Void) {
+	private func authorizeDevice(params: OAuth2StringDict?, completion: @escaping (OAuth2JSON?, Error?) -> Void) {
 		do {
-			let post = try deviceAuthorizationRequest().asURLRequest(for: self)
+			let post = try deviceAuthorizationRequest(params: params).asURLRequest(for: self)
 			logger?.debug("OAuth2", msg: "Obtaining device code from \(post.url!)")
 			
 			perform(request: post) { response in
