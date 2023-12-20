@@ -528,7 +528,7 @@ open class OAuth2: OAuth2Base {
 	- parameter params: Optional key/value pairs to pass during token exchange
 	- parameter callback: The callback to call after the exchange of resource access token has finished
 	*/
-	open func doExchangeAccessTokenForResource(resourcePath: String, params: OAuth2StringDict? = nil, callback: @escaping ((String?, OAuth2Error?) -> Void)) throws {
+	open func doExchangeAccessTokenForResource(resourcePath: String, params: OAuth2StringDict? = nil, callback: @escaping ((String?, OAuth2Error?) -> Void)) {
 		do {
 			let post = try tokenRequestForExchangeAccessTokenForResource(resourcePath: resourcePath, params: params).asURLRequest(for: self)
 			logger?.debug("OAuth2", msg: "Exchanging access token for resource \(resourcePath) from \(post.url?.description ?? "nil")")
