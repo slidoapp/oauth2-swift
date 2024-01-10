@@ -410,7 +410,7 @@ open class OAuth2: OAuth2Base {
 	/**
 	Generate the request to be used for token exchange when we have a refresh token.
 	
-	This will set "grant_type" to "urn:ietf:params:oauth:grant-type:token-exchange" add the refresh token, and take care of the remaining parameters.
+	This will set "grant_type" to "urn:ietf:params:oauth:grant-type:token-exchange", add the refresh token, and take care of the remaining parameters.
 	
 	- parameter audienceClientId: The client ID of the audience requesting for its own refresh token
 	- parameter params:           Additional parameters to pass during refresh token exchange
@@ -433,11 +433,11 @@ open class OAuth2: OAuth2Base {
 	}
 
 	/**
-	Echanges the subject 'srefresh token for audience client.
+	Exchanges the subject's refresh token for audience client.
 	see: https://datatracker.ietf.org/doc/html/rfc8693
 	see: https://www.scottbrady91.com/oauth/delegation-patterns-for-oauth-20
 	- parameter audienceClientId: The client ID of the audience requesting for its own refresh token
-	- parameter params: Optional key/value pairs to pass during token exhange
+	- parameter params: Optional key/value pairs to pass during token exchange
 	- parameter callback: The callback to call after the exchange of refresh token has finished
 	*/
 	open func doExchangeRefreshToken(audienceClientId: String, params: OAuth2StringDict? = nil, callback: @escaping ((String?, OAuth2Error?) -> Void)) {
@@ -468,7 +468,7 @@ open class OAuth2: OAuth2Base {
 					// **The identifier access_token is used for historical reasons and the issued token need not be an OAuth access token.**
 					// See: https://tools.ietf.org/id/draft-ietf-oauth-token-exchange-12.html#rfc.section.2.2.1
 					guard let exchangedRefreshToken = json["access_token"] as? String else {
-						throw OAuth2Error.generic("Exchange refresh token didn't return exhanged refresh token (response.access_token)")
+						throw OAuth2Error.generic("Exchange refresh token didn't return exchanged refresh token (response.access_token)")
 					}
 					self.logger?.debug("OAuth2", msg: "Did use refresh token for exchanging refresh token [\(exchangedRefreshToken)]")
 					if self.useKeychain {
@@ -490,6 +490,72 @@ open class OAuth2: OAuth2Base {
 		}
 	}
 	
+	// MARK: - Exchange Access Token For Resource
+
+	/**
+	Generate the request to be used for token exchange for resource when we have a access token.
+
+	This will set "grant_type" to "urn:ietf:params:oauth:grant-type:token-exchange", add the access token, and take care of the remaining parameters.
+
+	- parameter resourcePath:     The path of the resource requesting for its own access token
+	- parameter params:           Additional parameters to pass during resource access token exchange
+	- returns:                    An `OAuth2AuthRequest` instance that is configured for resource access token exchange
+	*/
+	open func tokenRequestForExchangeAccessTokenForResource(resourcePath: String, params: OAuth2StringDict? = nil) throws -> OAuth2AuthRequest {
+		guard let accessToken = clientConfig.accessToken, !accessToken.isEmpty else {
+			throw OAuth2Error.noAccessToken
+		}
+		guard let resourceUrl = clientConfig.resourceURL else {
+			throw OAuth2Error.noResourceURL
+		}
+
+		let req = OAuth2AuthRequest(url: (clientConfig.tokenURL ?? clientConfig.authorizeURL))
+		req.params["grant_type"] = "urn:ietf:params:oauth:grant-type:token-exchange"
+		req.params["resource"] = resourceUrl.appendingPathComponent(resourcePath).absoluteString
+		req.params["scope"] = clientConfig.scope
+		req.params["requested_token_type"] = "urn:ietf:params:oauth:token-type:access_token"
+		req.params["subject_token"] = accessToken
+		req.params["subject_token_type"] = "urn:ietf:params:oauth:token-type:access_token"
+		req.add(params: params)
+
+		return req
+	}
+	
+	/**
+	Exchanges the access token for resource access token.
+
+	- parameter resourcePath: The path of the resource requesting for its own access token
+	- parameter params: Optional key/value pairs to pass during token exchange
+	- parameter callback: The callback to call after the exchange of resource access token has finished
+	*/
+	open func doExchangeAccessTokenForResource(resourcePath: String, params: OAuth2StringDict? = nil, callback: @escaping ((String?, OAuth2Error?) -> Void)) {
+		do {
+			let post = try tokenRequestForExchangeAccessTokenForResource(resourcePath: resourcePath, params: params).asURLRequest(for: self)
+			logger?.debug("OAuth2", msg: "Exchanging access token for resource \(resourcePath) from \(post.url?.description ?? "nil")")
+
+			perform(request: post) { response in
+				do {
+					let data = try response.responseData()
+					let json = try self.parseAccessTokenResponse(data: data)
+					if response.response.statusCode >= 400 {
+						self.clientConfig.accessToken = nil
+						throw OAuth2Error.generic("Failed with status \(response.response.statusCode)")
+					}
+					guard let exchangedAccessToken = json["access_token"] as? String else {
+						throw OAuth2Error.generic("Exchange access token for resource didn't return exchanged access token (response.access_token)")
+					}
+					callback(exchangedAccessToken, nil)
+				} catch let error {
+					self.logger?.warn("OAuth2", msg: "Error exchanging access token for resource: \(error)")
+
+					callback(nil, error.asOAuth2Error)
+				}
+			}
+		} catch let error {
+			self.logger?.debug("OAuth2", msg: "Error exchanging access token for resource \(resourcePath): \(error)")
+			callback(nil, error.asOAuth2Error)
+		}
+	}
 	
 	// MARK: - Registration
 	
@@ -524,4 +590,3 @@ open class OAuth2: OAuth2Base {
 		}
 	}
 }
-
