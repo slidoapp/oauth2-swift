@@ -1,0 +1,59 @@
+name: build
+
+on:
+  push:
+
+permissions:
+  contents: read
+  checks: write
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        swift: ['5.2', '5.9']
+    
+    env:
+      DEVELOPER_DIR: '/Applications/Xcode_15.2.app'
+
+    runs-on: macos-14
+
+    steps:
+    - name: checkout
+      uses: actions/checkout@v4
+      with:
+        submodules: true
+    
+    - name: setup swift
+      uses: swift-actions/setup-swift@cdbe0f7f4c77929b6580e71983e8606e55ffe7e4 # v1.26.0
+      with:
+        swift-version: ${{ matrix.swift}}
+    
+    - name: build
+      run: swift build -v
+
+    - name: reports directory
+      run: mkdir reports
+
+    - name: run unit tests
+      continue-on-error: true
+      run: swift test --parallel --xunit-output report.xml
+  
+    - name: report unit test results
+      uses: dorny/test-reporter@eaa763f6ffc21c7a37837f56cd5f9737f27fc6c8 # v1.8.0
+      if: always()
+      id: test-report
+      with:
+        name: 'test-report (swift-${{ matrix.swift }})'
+        path: report.xml
+        reporter: swift-xunit
+        fail-on-error: false
+  
+    - name: summary
+      if: always()
+      run: |
+        {
+          echo "# Test Report (Swift ${{ matrix.swift }})"
+          echo ""
+          echo "Unit Tests: <${{ steps.test-report.outputs.url_html }}>"
+        } >> $GITHUB_STEP_SUMMARY
