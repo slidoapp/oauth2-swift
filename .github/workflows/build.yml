@@ -10,13 +10,24 @@ permissions:
 jobs:
   build:
     strategy:
+      fail-fast: false
       matrix:
-        swift: ['5.2', '5.9']
+        swift: ['5.2', '5.3', '5.9']
+        include:
+          - swift: '5.2'
+            macos: 'macos-11'
+            xcode-path: '/Applications/Xcode_11.7.app'
+          - swift: '5.3'
+            macos: 'macos-11'
+            xcode-path: '/Applications/Xcode_12.4.app'
+          - swift: '5.9'
+            macos: 'macos-14'
+            xcode-path: '/Applications/Xcode_15.2.app'
     
     env:
-      DEVELOPER_DIR: '/Applications/Xcode_15.2.app'
+      DEVELOPER_DIR: ${{ matrix.xcode-path}}
 
-    runs-on: macos-14
+    runs-on: ${{ matrix.macos }}
 
     steps:
     - name: checkout
@@ -54,6 +65,10 @@ jobs:
       run: |
         {
           echo "# Test Report (Swift ${{ matrix.swift }})"
+          echo ""
+          echo "macOS \`${{ matrix.macos }}\`  "
+          echo "Xcode \`${{ matrix.xcode-path }}\`  "
+          echo "Swift ${{ matrix.swift }}  "
           echo ""
           echo "Unit Tests: <${{ steps.test-report.outputs.url_html }}>"
         } >> $GITHUB_STEP_SUMMARY
