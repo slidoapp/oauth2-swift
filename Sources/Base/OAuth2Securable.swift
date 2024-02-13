@@ -116,6 +116,7 @@ open class OAuth2Securable: OAuth2Requestable {
 			var creds = OAuth2KeychainAccount(oauth2: self, account: keychainAccountForClientCredentials)
 			let creds_data = try creds.fetchedFromKeychain()
 			updateFromKeychainItems(creds_data)
+			logger?.trace("OAuth2", msg: "Client credentials updated from keychain: \(creds_data)")
 		}
 		catch {
 			logger?.warn("OAuth2", msg: "Failed to load client credentials from keychain: \(error)")
@@ -125,6 +126,7 @@ open class OAuth2Securable: OAuth2Requestable {
 			var toks = OAuth2KeychainAccount(oauth2: self, account: keychainAccountForTokens)
 			let toks_data = try toks.fetchedFromKeychain()
 			updateFromKeychainItems(toks_data)
+			logger?.trace("OAuth2", msg: "Tokens updated from keychain: \(toks_data)")
 		}
 		catch {
 			logger?.warn("OAuth2", msg: "Failed to load tokens from keychain: \(error)")
@@ -151,6 +153,7 @@ open class OAuth2Securable: OAuth2Requestable {
 			let keychain = OAuth2KeychainAccount(oauth2: self, account: keychainAccountForClientCredentials, data: items)
 			do {
 				try keychain.saveInKeychain()
+				logger?.trace("OAuth2", msg: "Client credentials stored to keychain: \(items)")
 			}
 			catch {
 				logger?.warn("OAuth2", msg: "Failed to store client credentials to keychain: \(error)")
@@ -174,6 +177,7 @@ open class OAuth2Securable: OAuth2Requestable {
 			let keychain = OAuth2KeychainAccount(oauth2: self, account: keychainAccountForTokens, data: items)
 			do {
 				try keychain.saveInKeychain()
+				logger?.trace("OAuth2", msg: "Tokens stored to keychain: \(items)")
 			}
 			catch let error {
 				logger?.warn("OAuth2", msg: "Failed to store tokens to keychain: \(error)")
