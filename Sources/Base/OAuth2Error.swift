@@ -64,8 +64,8 @@ public enum OAuth2Error: Error, CustomStringConvertible, Equatable {
 	/// The client is already authorizing.
 	case alreadyAuthorizing
 	
-	/// The client is exchanging the refresh token.
-	case exchangingRefreshToken
+	/// The client is already exchanging the refresh token.
+	case alreadyExchangingRefreshToken
 	
 	/// There is no authorization context.
 	case noAuthorizationContext
@@ -246,8 +246,8 @@ public enum OAuth2Error: Error, CustomStringConvertible, Equatable {
 			return "The password grant flow needs to be set a delegate to present the login controller."
 		case .alreadyAuthorizing:
 			return "The client is already authorizing, wait for it to finish or abort authorization before trying again"
-		case .exchangingRefreshToken:
-			return "Thre client is exchanging the refresh token, wait for it to finish"
+		case .alreadyExchangingRefreshToken:
+			return "Thre client is already exchanging the refresh token, wait for it to finish before trying again"
 		case .noAuthorizationContext:
 			return "No authorization context present"
 		case .invalidAuthorizationContext:
@@ -335,7 +335,7 @@ public enum OAuth2Error: Error, CustomStringConvertible, Equatable {
 		case (.noUsername, .noUsername):                             return true
 		case (.noPassword, .noPassword):                             return true
 		case (.alreadyAuthorizing, .alreadyAuthorizing):             return true
-		case (.exchangingRefreshToken, .exchangingRefreshToken):     return true
+		case (.alreadyExchangingRefreshToken, .alreadyExchangingRefreshToken):   return true
 		case (.noAuthorizationContext, .noAuthorizationContext):                 return true
 		case (.invalidAuthorizationContext, .invalidAuthorizationContext):       return true
 		case (.invalidRedirectURL(let lhu), .invalidRedirectURL(let rhu)):       return lhu == rhu

@@ -106,8 +106,8 @@ open class OAuth2: OAuth2Base {
 			return
 		}
 
-		if (isExchangingRefreshToken) {
-			callback(nil, OAuth2Error.exchangingRefreshToken)
+		if isExchangingRefreshToken {
+			callback(nil, OAuth2Error.alreadyExchangingRefreshToken)
 			return
 		}
 		
@@ -156,7 +156,7 @@ open class OAuth2: OAuth2Base {
 		}
 		
 		if (isExchangingRefreshToken) {
-			callback(nil, OAuth2Error.exchangingRefreshToken)
+			callback(nil, OAuth2Error.alreadyExchangingRefreshToken)
 			return
 		}
 		
@@ -443,7 +443,7 @@ open class OAuth2: OAuth2Base {
 	open func doExchangeRefreshToken(audienceClientId: String, params: OAuth2StringDict? = nil, callback: @escaping ((String?, OAuth2Error?) -> Void)) {
 		do {
 			guard !self.isExchangingRefreshToken else {
-				throw OAuth2Error.generic("The client is already exchanging the refresh token")
+				throw OAuth2Error.alreadyExchangingRefreshToken
 			}
 			self.isExchangingRefreshToken = true
 
