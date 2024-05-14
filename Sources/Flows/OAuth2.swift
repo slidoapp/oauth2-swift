@@ -470,7 +470,8 @@ open class OAuth2: OAuth2Base {
 					guard let exchangedRefreshToken = json["access_token"] as? String else {
 						throw OAuth2Error.generic("Exchange refresh token didn't return exchanged refresh token (response.access_token)")
 					}
-					self.logger?.debug("OAuth2", msg: "Did use refresh token for exchanging refresh token [\(exchangedRefreshToken)]")
+					self.logger?.debug("OAuth2", msg: "Did use refresh token for exchanging refresh token.")
+					self.logger?.trace("OAuth2", msg: "Exchanged refresh token is [\(exchangedRefreshToken)]")
 					if self.useKeychain {
 						self.storeTokensToKeychain()
 					}
