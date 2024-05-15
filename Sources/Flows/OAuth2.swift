@@ -440,7 +440,7 @@ open class OAuth2: OAuth2Base {
 	- parameter params: Optional key/value pairs to pass during token exchange
 	- parameter callback: The callback to call after the exchange of refresh token has finished
 	*/
-	open func doExchangeRefreshToken(audienceClientId: String, params: OAuth2StringDict? = nil, callback: @escaping ((String?, OAuth2Error?) -> Void)) {
+	open func doExchangeRefreshToken(audienceClientId: String, traceId: String, params: OAuth2StringDict? = nil, callback: @escaping ((String?, OAuth2Error?) -> Void)) {
 		do {
 			guard !self.isExchangingRefreshToken else {
 				throw OAuth2Error.alreadyExchangingRefreshToken
@@ -448,7 +448,7 @@ open class OAuth2: OAuth2Base {
 			self.isExchangingRefreshToken = true
 
 			let post = try tokenRequestForExchangeRefreshToken(audienceClientId: audienceClientId, params: params).asURLRequest(for: self)
-			logger?.debug("OAuth2", msg: "Exchanging refresh token for client with ID \(audienceClientId) from \(post.url?.description ?? "nil")")
+			logger?.debug("OAuth2", msg: "Exchanging refresh token for client with ID \(audienceClientId) from \(post.url?.description ?? "nil") [trace=\(traceId)]")
 
 			perform(request: post) { response in
 				do {
@@ -468,23 +468,24 @@ open class OAuth2: OAuth2Base {
 					// **The identifier access_token is used for historical reasons and the issued token need not be an OAuth access token.**
 					// See: https://tools.ietf.org/id/draft-ietf-oauth-token-exchange-12.html#rfc.section.2.2.1
 					guard let exchangedRefreshToken = json["access_token"] as? String else {
-						throw OAuth2Error.generic("Exchange refresh token didn't return exchanged refresh token (response.access_token)")
+						throw OAuth2Error.generic("Exchange refresh token didn't return exchanged refresh token (response.access_token) [trace=\(traceId)]")
 					}
-					self.logger?.debug("OAuth2", msg: "Did use refresh token for exchanging refresh token [\(exchangedRefreshToken)]")
+					self.logger?.debug("OAuth2", msg: "Did use refresh token for exchanging refresh token [trace=\(traceId)]")
+					self.logger?.trace("OAuth2", msg: "Exchanged refresh token in [trace=\(traceId)] is [\(exchangedRefreshToken)]")
 					if self.useKeychain {
 						self.storeTokensToKeychain()
 					}
 					self.isExchangingRefreshToken = false
 					callback(exchangedRefreshToken, nil)
 				} catch let error {
-					self.logger?.debug("OAuth2", msg: "Error exchanging refresh token: \(error)")
+					self.logger?.debug("OAuth2", msg: "Error exchanging refresh token in [trace=\(traceId)]: \(error)")
 					self.isExchangingRefreshToken = false
 					
 					callback(nil, error.asOAuth2Error)
 				}
 			}
 		} catch let error {
-			self.logger?.debug("OAuth2", msg: "Error exchanging refresh token: \(error)")
+			self.logger?.debug("OAuth2", msg: "Error exchanging refresh in [trace=\(traceId)] token: \(error)")
 			self.isExchangingRefreshToken = false
 			callback(nil, error.asOAuth2Error)
 		}

@@ -247,7 +247,7 @@ public enum OAuth2Error: Error, CustomStringConvertible, Equatable {
 		case .alreadyAuthorizing:
 			return "The client is already authorizing, wait for it to finish or abort authorization before trying again"
 		case .alreadyExchangingRefreshToken:
-			return "Thre client is already exchanging the refresh token, wait for it to finish before trying again"
+			return "The client is already exchanging the refresh token, wait for it to finish before trying again"
 		case .noAuthorizationContext:
 			return "No authorization context present"
 		case .invalidAuthorizationContext:
