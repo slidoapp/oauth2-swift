@@ -1,0 +1,73 @@
+name: build
+
+on:
+  push:
+  pull_request:
+    branches: [ 'main' ]
+
+permissions:
+  contents: read
+  checks: write
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        xcode: ['xcode16', 'xcode15']
+        include:
+          - xcode: 'xcode16'
+            xcode-path: '/Applications/Xcode_16.0.0.app'
+            macos: 'macos-14'
+          - xcode: 'xcode15'
+            xcode-path: '/Applications/Xcode_15.4.0.app'
+            macos: 'macos-14'
+    
+    env:
+      DEVELOPER_DIR: ${{ matrix.xcode-path }}
+
+    runs-on: ${{ matrix.macos }}
+
+    steps:
+    - name: checkout
+      uses: actions/checkout@v4
+      with:
+        submodules: true
+
+    - name: swift version
+      run: swift --version
+
+    - name: build
+      run: swift build -v
+
+    - name: run unit tests
+      continue-on-error: true
+      run: |
+        mkdir reports
+        swift test --parallel --xunit-output 'reports/TestReport.xml'
+  
+    - name: report unit test results
+      uses: dorny/test-reporter@eaa763f6ffc21c7a37837f56cd5f9737f27fc6c8
+      if: always()
+      id: results-unit-tests
+      with:
+        name: 'results-unit-tests-${{ matrix.xcode }}'
+        path: 'reports/TestReport.xml'
+        reporter: swift-xunit
+        fail-on-error: true
+
+    - name: summary
+      if: always()
+      run: |
+        {
+          echo "# Test Summary Report"
+          echo ""
+          echo "System details"
+          echo ""
+          echo "Name: \`${{ matrix.xcode }}\`  "
+          echo "macOS: \`${{ matrix.macos }}\`  "
+          echo "Xcode: \`${{ matrix.xcode-path }}\` "
+          echo ""
+          echo "Unit Tests Conclusion: \`${{ steps.results-unit-tests.outputs.conclusion }}\`  "
+          echo "Unit Tests Report: <${{ steps.results-unit-tests.outputs.url_html }}>"
+        } >> $GITHUB_STEP_SUMMARY
