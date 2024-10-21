@@ -7,6 +7,26 @@ You can also refer to commit logs to get details on what was implemented, fixed 
 #### 5.4.0-slido
 - Add the device authorization grant flow [PS-17876](https://sli-do.atlassian.net/browse/PS-17876)
 
+#### 5.3.5
+
+- Fix visionOS build issue
+  [#417](https://github.com/p2/OAuth2/pull/417)
+
+#### 5.3.4
+
+- Support OAuth2 Device Grant via `OAuth2DeviceGrant`
+  [DominikPalo](https://github.com/DominikPalo)
+  [#416](https://github.com/p2/OAuth2/pull/416)
+- Fixed issue with wrong states on dismiss via pull down gesture.
+  [cbruns1985](https://github.com/cbruns1985)
+  [#415](https://github.com/p2/OAuth2/pull/415)
+
+#### 5.3.3
+
+- Make ASWebAuthenticationSession work on macOS
+- Minor maintenance
+- Add deprecation notices to using the custom web view controller on iOS, which will be removed in v 6.
+
 #### 5.3.2
 
 - Fix tvOS build.

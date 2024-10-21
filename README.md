@@ -1,17 +1,17 @@
 OAuth2
 ======
 
-[![Build Status](https://travis-ci.org/p2/OAuth2.svg?branch=master)](https://travis-ci.org/p2/OAuth2)
+[![Build Status](https://travis-ci.org/p2/OAuth2.svg?branch=main)](https://travis-ci.org/p2/OAuth2)
 [![License](https://img.shields.io/:license-apache-blue.svg)](LICENSE.txt)
 
-OAuth2 frameworks for **macOS**, **iOS** and **tvOS** written in Swift 5.0.
+OAuth2 frameworks for **macOS**, **iOS** and **tvOS** written in Swift 5.
 
 - [⤵️ Installation](#installation)
 - [🛠 Usage](#usage)
 - [🖥 Sample macOS app][sample] (with data loader examples)
 - [📖 Technical Documentation](https://p2.github.io/OAuth2)
 
-OAuth2 requires Xcode 10.2, the built framework can be used on **OS X 10.11** or **iOS 8** and later.
+OAuth2 requires Xcode 12.4, the built framework can be used on **OS X 10.15** or **iOS 12** and later.
 Happy to accept pull requests, please see [CONTRIBUTING.md](./CONTRIBUTING.md)
 
 ### Swift Version
@@ -83,7 +83,7 @@ Starting with version 3.0, there is an `OAuth2DataLoader` class that you can use
 It will automatically start authorization if needed and will ensure that this works even if you have multiple calls going on.
 For details on how to configure authorization see step 4 below, in this example we'll use "embedded" authorization, meaning we'll show a SFSafariViewController on iOS if the user needs to log in.
 
-[This wiki page has all you need](https://github.com/p2/OAuth2/wiki/Alamofire-4) to easily use OAuth2 with Alamofire instead.
+[This wiki page has all you need](https://github.com/p2/OAuth2/wiki/Alamofire-5) to easily use OAuth2 with Alamofire instead.
 
 ```swift
 let base = URL(string: "https://api.github.com")!
@@ -206,7 +206,7 @@ let task = oauth2.session.dataTaskWithRequest(req) { data, response, error in
 task.resume()
 ```
 
-Of course you can use your own `URLSession` with these requests, you don't have to use `oauth2.session`; use [OAuth2DataLoader](https://github.com/p2/OAuth2/blob/master/Sources/Base/OAuth2DataLoader.swift), as shown in step 2, or hand it over to _Alamofire_.
+Of course you can use your own `URLSession` with these requests, you don't have to use `oauth2.session`; use [OAuth2DataLoader](https://github.com/p2/OAuth2/blob/main/Sources/Base/OAuth2DataLoader.swift), as shown in step 2, or hand it over to _Alamofire_.
 [Here's all you need](https://github.com/p2/OAuth2/wiki/Alamofire-4) to easily use OAuth2 with Alamofire.
 
 ### 7. Cancel Authorization
@@ -346,6 +346,13 @@ Instantiate `OAuth2ClientCredentials`, as usual supplying `client_id` but also a
 The _Resource Owner Password Credentials Grant_ is supported with the `OAuth2PasswordGrant` subclass.
 Create an instance as shown above, set its `username` and `password` properties, then call `authorize()`.
 
+### Device Grant
+
+The [OAuth 2.0 Device Authorization Grant](https://datatracker.ietf.org/doc/html/rfc8628) flow is implemented in the `OAuth2DeviceGrant` subclass.
+Although this flow is designed for devices that either lack a browser to perform a user-agent-based authorization or are input constrained, it is also very useful for applications not allowed to [start their own webserver (loopback URL) or register a custom URL scheme](https://www.oauth.com/oauth2-servers/redirect-uris/redirect-uris-native-apps/) to finish the authorization code grant flow.
+To initiate the device grant flow, the `deviceAuthorizeURL` needs to be correctly configured to point towards the device authorization endpoint. By calling the `OAuth2DeviceGrant.start(useNonTextualTransmission:params:completion:)` method, the client obtains [all necessary details](https://datatracker.ietf.org/doc/html/rfc8628#section-3.2) to complete the authorization on a secondary device or in the system browser.
+
+
 
 Site-Specific Peculiarities
 ---------------------------
@@ -404,6 +411,12 @@ Similar is how you specify custom HTTP headers:
     oauth2.clientConfig.authHeaders = ["Accept": "application/json, text/plain"]
     // or in your settings:
     "headers": ["Accept": "application/json, text/plain"]
+
+Some sites (e.g. Slack) validate the User-Agent string against supported browser versions, which may not match WebKit's default in embedded mode. The embedded mode User-Agent may be overriden with:
+
+    oauth2.customUserAgent = "Version/15.6.1 Safari"
+    // or in your settings:
+    "custom_user_agent": "Your string of choice"
 
 Starting with version 2.0.1 on iOS 9, `SFSafariViewController` will be used for embedded authorization.
 Starting after version 4.2, on iOS 11 (`SFAuthenticationSession`) and iOS 12 (`ASWebAuthenticationSession`), you can opt-in to these newer authorization session view controllers:

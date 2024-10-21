@@ -4,6 +4,8 @@ Contributors
 Contributors to the codebase, in reverse chronological order:
 
 - Dominik Paľo, @DominikPalo
+- Greg Price, @ObscureBug
+- Joseph Quigley, @josephquigley
 - Martin Pittenauer, @m4p
 - Lars, @longinius
 - Christian Gossain, @cgossain
