@@ -10,16 +10,16 @@ permissions:
   checks: write
 
 jobs:
-  build-package:
+  build-swift:
     strategy:
       fail-fast: false
       matrix:
-        xcode: ['xcode16', 'xcode15']
+        swift: ['swift6', 'swift5']
         include:
-          - xcode: 'xcode16'
+          - swift: 'swift6'
             xcode-path: '/Applications/Xcode_16.0.0.app'
             macos: 'macos-14'
-          - xcode: 'xcode15'
+          - swift: 'swift5'
             xcode-path: '/Applications/Xcode_15.4.0.app'
             macos: 'macos-14'
     
@@ -49,9 +49,9 @@ jobs:
     - name: report unit test results
       uses: dorny/test-reporter@eaa763f6ffc21c7a37837f56cd5f9737f27fc6c8
       if: always()
-      id: results-unit-tests
+      id: results-swift-tests
       with:
-        name: 'results-unit-tests-${{ matrix.xcode }}'
+        name: 'results-swift-tests-${{ matrix.swift }}'
         path: 'reports/TestReport.xml'
         reporter: swift-xunit
         fail-on-error: true
@@ -64,16 +64,16 @@ jobs:
           echo ""
           echo "System details"
           echo ""
-          echo "Name: \`${{ matrix.xcode }}\`  "
+          echo "Swift: \`${{ matrix.swift }}\`  "
           echo "macOS: \`${{ matrix.macos }}\`  "
           echo "Xcode: \`${{ matrix.xcode-path }}\` "
           echo ""
-          echo "Unit Tests Conclusion: \`${{ steps.results-unit-tests.outputs.conclusion }}\`  "
-          echo "Unit Tests Report: <${{ steps.results-unit-tests.outputs.url_html }}>"
+          echo "Unit Tests Conclusion: \`${{ steps.results-swift-tests.outputs.conclusion }}\`  "
+          echo "Unit Tests Report: <${{ steps.results-swift-tests.outputs.url_html }}>"
         } >> $GITHUB_STEP_SUMMARY
 
-  build-xcodeproj:
-    name: 'build-xcodeproj (${{ matrix.platform }})'
+  build-xcode:
+    name: 'build-xcode (${{ matrix.platform }})'
 
     strategy:
       fail-fast: false
