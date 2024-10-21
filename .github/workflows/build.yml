@@ -10,7 +10,7 @@ permissions:
   checks: write
 
 jobs:
-  build:
+  build-package:
     strategy:
       fail-fast: false
       matrix:
@@ -71,3 +71,55 @@ jobs:
           echo "Unit Tests Conclusion: \`${{ steps.results-unit-tests.outputs.conclusion }}\`  "
           echo "Unit Tests Report: <${{ steps.results-unit-tests.outputs.url_html }}>"
         } >> $GITHUB_STEP_SUMMARY
+
+  build-xcodeproj:
+    name: 'build-xcodeproj (${{ matrix.platform }})'
+
+    strategy:
+      fail-fast: false
+      matrix:
+        macos: [ 'macos-14' ]
+        platform: [ 'macOS', 'iOS', 'tvOS' ]
+        include:
+          - platform: 'macOS'
+            scheme: 'OAuth2macOS'
+          - platform: 'iOS'
+            scheme: 'OAuth2iOS'
+          - platform: 'tvOS'
+            scheme: 'OAuth2tvOS'
+    
+    env:
+      DEVELOPER_DIR: '/Applications/Xcode_15.4.0.app'
+      TEST_RESULTS_PATH: 'OAuth2Tests_${{ matrix.platform }}_run${{ github.run_number }}.xcresult'
+
+    runs-on: ${{ matrix.macos }}
+
+    steps:
+    - name: checkout
+      uses: actions/checkout@v4
+      with:
+        submodules: true
+
+    - name: xcode version
+      run: xcodebuild -version
+
+    - name: swift version
+      run: swift --version
+
+    - name: build
+      run: >
+        xcodebuild
+        -scheme '${{ matrix.scheme }}'
+        -configuration Debug
+        -destination 'platform=${{ matrix.platform }}'
+        -resultBundlePath ${{ env.TEST_RESULTS_PATH }}
+        -showBuildTimingSummary
+        build test
+
+    - name: run xcresulttool
+      uses: slidoapp/xcresulttool@v2.0.0
+      if: success() || failure()
+      with:
+        title: 'results-xcode-tests-${{ matrix.platform }}'
+        path: ${{ env.TEST_RESULTS_PATH }}
+        upload-bundles: true
