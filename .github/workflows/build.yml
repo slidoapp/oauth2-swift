@@ -1,0 +1,125 @@
+name: build
+
+on:
+  push:
+  pull_request:
+    branches: [ 'main' ]
+
+permissions:
+  contents: read
+  checks: write
+
+jobs:
+  build-swift:
+    strategy:
+      fail-fast: false
+      matrix:
+        swift: ['swift6', 'swift5']
+        include:
+          - swift: 'swift6'
+            xcode-path: '/Applications/Xcode_16.0.0.app'
+            macos: 'macos-14'
+          - swift: 'swift5'
+            xcode-path: '/Applications/Xcode_15.4.0.app'
+            macos: 'macos-14'
+    
+    env:
+      DEVELOPER_DIR: ${{ matrix.xcode-path }}
+
+    runs-on: ${{ matrix.macos }}
+
+    steps:
+    - name: checkout
+      uses: actions/checkout@v4
+      with:
+        submodules: true
+
+    - name: swift version
+      run: swift --version
+
+    - name: build
+      run: swift build -v
+
+    - name: run unit tests
+      continue-on-error: true
+      run: |
+        mkdir reports
+        swift test --parallel --xunit-output 'reports/TestReport.xml'
+  
+    - name: report unit test results
+      uses: dorny/test-reporter@eaa763f6ffc21c7a37837f56cd5f9737f27fc6c8
+      if: always()
+      id: results-swift-tests
+      with:
+        name: 'results-swift-tests-${{ matrix.swift }}'
+        path: 'reports/TestReport.xml'
+        reporter: swift-xunit
+        fail-on-error: true
+
+    - name: summary
+      if: always()
+      run: |
+        {
+          echo "# Test Summary Report"
+          echo ""
+          echo "System details"
+          echo ""
+          echo "Swift: \`${{ matrix.swift }}\`  "
+          echo "macOS: \`${{ matrix.macos }}\`  "
+          echo "Xcode: \`${{ matrix.xcode-path }}\` "
+          echo ""
+          echo "Unit Tests Conclusion: \`${{ steps.results-swift-tests.outputs.conclusion }}\`  "
+          echo "Unit Tests Report: <${{ steps.results-swift-tests.outputs.url_html }}>"
+        } >> $GITHUB_STEP_SUMMARY
+
+  build-xcode:
+    name: 'build-xcode (${{ matrix.platform }})'
+
+    strategy:
+      fail-fast: false
+      matrix:
+        macos: [ 'macos-14' ]
+        platform: [ 'macOS', 'iOS', 'tvOS' ]
+        include:
+          - platform: 'macOS'
+            scheme: 'OAuth2macOS'
+          - platform: 'iOS'
+            scheme: 'OAuth2iOS'
+          - platform: 'tvOS'
+            scheme: 'OAuth2tvOS'
+    
+    env:
+      DEVELOPER_DIR: '/Applications/Xcode_15.4.0.app'
+      TEST_RESULTS_PATH: 'OAuth2Tests_${{ matrix.platform }}_run${{ github.run_number }}.xcresult'
+
+    runs-on: ${{ matrix.macos }}
+
+    steps:
+    - name: checkout
+      uses: actions/checkout@v4
+      with:
+        submodules: true
+
+    - name: xcode version
+      run: xcodebuild -version
+
+    - name: swift version
+      run: swift --version
+
+    - name: build
+      run: >
+        xcodebuild
+        -scheme '${{ matrix.scheme }}'
+        -configuration Debug
+        -destination 'platform=${{ matrix.platform }}'
+        -resultBundlePath ${{ env.TEST_RESULTS_PATH }}
+        -showBuildTimingSummary
+        build test
+
+    - name: run xcresulttool
+      uses: slidoapp/xcresulttool@v2.0.0
+      if: success() || failure()
+      with:
+        title: 'results-xcode-tests-${{ matrix.platform }}'
+        path: ${{ env.TEST_RESULTS_PATH }}
+        upload-bundles: true
