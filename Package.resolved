@@ -1,0 +1,16 @@
+{
+  "object": {
+    "pins": [
+      {
+        "package": "SwiftKeychain",
+        "repositoryURL": "https://github.com/jozefizso/SwiftKeychain.git",
+        "state": {
+          "branch": "package",
+          "revision": "5909fdb4f5d8d4e63a1c79ccd363627a6134a1f5",
+          "version": null
+        }
+      }
+    ]
+  },
+  "version": 1
+}
