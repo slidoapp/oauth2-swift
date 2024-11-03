@@ -1,0 +1,15 @@
+{
+  "originHash" : "ae171b0f49c373efee506bb2ae3fecbc5e53e2fe19a4ef907ab4c5ed1cbe6545",
+  "pins" : [
+    {
+      "identity" : "swiftkeychain",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/jozefizso/SwiftKeychain.git",
+      "state" : {
+        "branch" : "package",
+        "revision" : "5909fdb4f5d8d4e63a1c79ccd363627a6134a1f5"
+      }
+    }
+  ],
+  "version" : 3
+}
