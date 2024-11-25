@@ -12,7 +12,7 @@ OAuth2 frameworks for **macOS**, **iOS** and **tvOS** written in Swift 5.
 - [📖 Technical Documentation](https://p2.github.io/OAuth2)
 
 OAuth2 requires Xcode 12.4, the built framework can be used on **OS X 10.15** or **iOS 12** and later.
-Happy to accept pull requests, please see [CONTRIBUTING.md](./CONTRIBUTING.md)
+Happy to accept pull requests, please see [CONTRIBUTING.md](./Docs/CONTRIBUTING.md)
 
 ### Swift Version
 
