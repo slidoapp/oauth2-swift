@@ -169,6 +169,7 @@
 /* Begin PBXFileReference section */
 		0C2F5E5A1DE2DB8500F621E0 /* OAuth2CodeGrantAzure.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = OAuth2CodeGrantAzure.swift; sourceTree = "<group>"; };
 		19C919DC1E51CC8000BFC834 /* OAuth2CustomAuthorizer+macOS.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = "OAuth2CustomAuthorizer+macOS.swift"; sourceTree = "<group>"; };
+		436288022CF4D35C00556196 /* Docs */ = {isa = PBXFileReference; lastKnownFileType = folder; path = Docs; sourceTree = "<group>"; };
 		6598543F1C5B3B4000237D39 /* OAuth2Authorizer+tvOS.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = "OAuth2Authorizer+tvOS.swift"; path = "Sources/tvOS/OAuth2Authorizer+tvOS.swift"; sourceTree = SOURCE_ROOT; };
 		659854461C5B3BEA00237D39 /* OAuth2.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = OAuth2.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		65EC05DF1C9050CB00DE9186 /* OAuth2KeychainAccount.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = OAuth2KeychainAccount.swift; sourceTree = "<group>"; };
@@ -209,7 +210,6 @@
 		EE9EBF121D775A21003263FC /* OAuth2DataLoader.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = OAuth2DataLoader.swift; sourceTree = "<group>"; };
 		EE9EBF161D775C59003263FC /* OAuth2DataRequest.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = OAuth2DataRequest.swift; sourceTree = "<group>"; };
 		EE9EBF1A1D775F74003263FC /* OAuth2Securable.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = OAuth2Securable.swift; sourceTree = "<group>"; };
-		EEAC179F1CAA69110025F84B /* CONTRIBUTING.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = CONTRIBUTING.md; sourceTree = "<group>"; };
 		EEAC17A01CAA69110025F84B /* CONTRIBUTORS.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = CONTRIBUTORS.md; sourceTree = "<group>"; };
 		EEACE1DE1A7E8FC1009BF3A7 /* OAuth2CodeGrantFacebook.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = OAuth2CodeGrantFacebook.swift; sourceTree = "<group>"; };
 		EEAEF10A1CDBCF28001A1C6F /* OAuth2Logger.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = OAuth2Logger.swift; sourceTree = "<group>"; };
@@ -393,11 +393,11 @@
 			children = (
 				EE29EABE195B0813008882C8 /* README.md */,
 				EE8EE6DA1B12AB35005B90C5 /* CHANGELOG.md */,
-				EEAC179F1CAA69110025F84B /* CONTRIBUTING.md */,
 				EEAC17A01CAA69110025F84B /* CONTRIBUTORS.md */,
 				EE29836A1D3FC28000933CDD /* Package.swift */,
 				EE450CD31AD57578008AB6FC /* p2.OAuth2.podspec */,
 				EE01F96E1C58D5D6003AEA7E /* generate-docs.sh */,
+				436288022CF4D35C00556196 /* Docs */,
 				EEDB8626193FAAE500C4EEA1 /* OAuth2 */,
 				EEE209A319427DFE00736F1A /* Tests */,
 				EEDB8625193FAAE500C4EEA1 /* Products */,
