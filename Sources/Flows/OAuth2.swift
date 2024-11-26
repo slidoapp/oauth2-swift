@@ -21,6 +21,7 @@
 import Foundation
 #if !NO_MODULE_IMPORT
  import Base
+ import Constants
  #if os(macOS)
   import macOS
  #elseif os(iOS) || os(visionOS)
@@ -358,7 +359,7 @@ open class OAuth2: OAuth2Base {
 		}
 		
 		let req = OAuth2AuthRequest(url: (clientConfig.refreshURL ?? clientConfig.tokenURL ?? clientConfig.authorizeURL))
-		req.params["grant_type"] = "refresh_token"
+		req.params["grant_type"] = OAuth2GrantTypes.refreshToken
 		req.params["refresh_token"] = refreshToken
 		if let clientId = clientId {
 			req.params["client_id"] = clientId
@@ -423,11 +424,11 @@ open class OAuth2: OAuth2Base {
 		}
 
 		let req = OAuth2AuthRequest(url: (clientConfig.tokenURL ?? clientConfig.authorizeURL))
-		req.params["grant_type"] = "urn:ietf:params:oauth:grant-type:token-exchange"
+		req.params["grant_type"] = OAuth2GrantTypes.tokenExchange
 		req.params["audience"] = audienceClientId
-		req.params["requested_token_type"] = "urn:ietf:params:oauth:token-type:refresh_token"
+		req.params["requested_token_type"] = OAuth2TokenTypeIdentifiers.refreshToken
 		req.params["subject_token"] = refreshToken
-		req.params["subject_token_type"] = "urn:ietf:params:oauth:token-type:refresh_token"
+		req.params["subject_token_type"] = OAuth2TokenTypeIdentifiers.refreshToken
 		req.add(params: params)
 
 		return req
@@ -512,12 +513,12 @@ open class OAuth2: OAuth2Base {
 		}
 
 		let req = OAuth2AuthRequest(url: (clientConfig.tokenURL ?? clientConfig.authorizeURL))
-		req.params["grant_type"] = "urn:ietf:params:oauth:grant-type:token-exchange"
+		req.params["grant_type"] = OAuth2GrantTypes.tokenExchange
 		req.params["resource"] = resourceUrl.appendingPathComponent(resourcePath).absoluteString
 		req.params["scope"] = clientConfig.scope
-		req.params["requested_token_type"] = "urn:ietf:params:oauth:token-type:access_token"
+		req.params["requested_token_type"] = OAuth2TokenTypeIdentifiers.accessToken
 		req.params["subject_token"] = accessToken
-		req.params["subject_token_type"] = "urn:ietf:params:oauth:token-type:access_token"
+		req.params["subject_token_type"] = OAuth2TokenTypeIdentifiers.accessToken
 		req.add(params: params)
 
 		return req

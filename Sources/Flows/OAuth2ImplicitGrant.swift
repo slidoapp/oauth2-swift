@@ -21,6 +21,7 @@
 import Foundation
 #if !NO_MODULE_IMPORT
 import Base
+import Constants
 #endif
 
 
@@ -30,11 +31,11 @@ Class to handle OAuth2 requests for public clients, such as distributed Mac/iOS 
 open class OAuth2ImplicitGrant: OAuth2 {
 	
 	override open class var grantType: String {
-		return "implicit"
+		return OAuth2GrantTypes.implicit
 	}
 	
 	override open class var responseType: String? {
-		return "token"
+		return OAuth2ResponseTypes.token
 	}
 	
 	override open func handleRedirectURL(_ redirect: URL) {

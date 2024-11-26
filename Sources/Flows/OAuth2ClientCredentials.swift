@@ -21,6 +21,7 @@
 import Foundation
 #if !NO_MODULE_IMPORT
 import Base
+import Constants
 #endif
 
 
@@ -30,7 +31,7 @@ Class to handle two-legged OAuth2 requests of the "client_credentials" type.
 open class OAuth2ClientCredentials: OAuth2 {
 	
 	override open class var grantType: String {
-		return "client_credentials"
+		return OAuth2GrantTypes.clientCredentials
 	}
 	
 	override open func doAuthorize(params inParams: OAuth2StringDict? = nil) {

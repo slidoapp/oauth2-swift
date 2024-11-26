@@ -21,6 +21,7 @@
 import Foundation
 #if !NO_MODULE_IMPORT
  import Base
+ import Constants
  #if os(macOS)
   import macOS
  #elseif os(iOS) || os(visionOS)
@@ -53,7 +54,7 @@ If no credentials are set when authorizing, a native controller is shown so that
 open class OAuth2PasswordGrant: OAuth2 {
 	
 	override open class var grantType: String {
-		return "password"
+		return OAuth2GrantTypes.password
 	}
 	
 	override open class var clientIdMandatory: Bool {
