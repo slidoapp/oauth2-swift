@@ -80,7 +80,7 @@ open class OAuth2DataLoader: OAuth2Requestable {
 	- parameter request:  The request to execute
 	- parameter callback: The callback to call when the request completes/fails. Looks terrifying, see above on how to use it
 	*/
-	override open func perform(request: URLRequest, callback: @escaping ((OAuth2Response) -> Void)) {
+	open func perform(request: URLRequest, callback: @escaping ((OAuth2Response) -> Void)) {
 		perform(request: request, retry: true, callback: callback)
 	}
 	
@@ -112,7 +112,9 @@ open class OAuth2DataLoader: OAuth2Requestable {
 			return
 		}
 		
-		super.perform(request: request) { response in
+		Task {
+			let response = await super.perform(request: request)
+			
 			do {
 				if self.alsoIntercept403, 403 == response.response.statusCode {
 					throw OAuth2Error.unauthorizedClient(nil)
@@ -126,16 +128,19 @@ open class OAuth2DataLoader: OAuth2Requestable {
 				if retry {
 					self.enqueue(request: request, callback: callback)
 					self.oauth2.clientConfig.accessToken = nil
-					self.attemptToAuthorize() { json, error in
-						
-						// dequeue all if we're authorized, throw all away if something went wrong
-						if nil != json {
-							self.retryAll()
+					
+					
+					do {
+						let json = try await self.attemptToAuthorize()
+						guard  json != nil else {
+							throw OAuth2Error.requestCancelled
 						}
-						else {
-							self.throwAllAway(with: error ?? OAuth2Error.requestCancelled)
-						}
+	
+						self.retryAll()
+					} catch {
+						self.throwAllAway(with: error.asOAuth2Error)
 					}
+	
 				}
 				else {
 					callback(response)
@@ -157,14 +162,15 @@ open class OAuth2DataLoader: OAuth2Requestable {
 	- parameter callback: The callback passed on from `authorize(callback:)`. Authorization finishes successfully (auth parameters will be
 	                      non-nil but may be an empty dict), fails (error will be non-nil) or is canceled (both params and error are nil)
 	*/
-	open func attemptToAuthorize(callback: @escaping ((OAuth2JSON?, OAuth2Error?) -> Void)) {
-		if !isAuthorizing {
-			isAuthorizing = true
-			oauth2.authorize() { authParams, error in
-				self.isAuthorizing = false
-				callback(authParams, error)
-			}
+	open func attemptToAuthorize() async throws -> OAuth2JSON? {
+		guard !self.isAuthorizing else {
+			return nil
 		}
+		
+		self.isAuthorizing = true
+		let authParams = try await oauth2.authorize()
+		self.isAuthorizing = false
+		return authParams
 	}
 	
 	

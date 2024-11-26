@@ -17,14 +17,12 @@ The class `OAuth2DataTaskRequestPerformer` implements this protocol and is by de
 public protocol OAuth2RequestPerformer {
 	
 	/**
-	This method should start executing the given request, returning a URLSessionTask if it chooses to do so. **You do not neet to call
-	`resume()` on this task**, it's supposed to already have started. It is being returned so you may be able to do additional stuff.
+	This method should execute the given request asynchronously.
 	
 	- parameter request: An URLRequest object that provides the URL, cache policy, request type, body data or body stream, and so on.
-	- parameter completionHandler: The completion handler to call when the load request is complete.
-	- returns: An already running session task
+	- returns: Data and response.
 	*/
-	func perform(request: URLRequest, completionHandler: @escaping (Data?, URLResponse?, Error?) -> Void) -> URLSessionTask?
+	func perform(request: URLRequest) async throws -> (Data?, URLResponse)
 }
 
 
@@ -36,7 +34,6 @@ open class OAuth2DataTaskRequestPerformer: OAuth2RequestPerformer {
 	/// The URLSession that should be used.
 	public var session: URLSession
 	
-	
 	/**
 	Designated initializer.
 	*/
@@ -45,18 +42,13 @@ open class OAuth2DataTaskRequestPerformer: OAuth2RequestPerformer {
 	}
 	
 	/**
-	This method should start executing the given request, returning a URLSessionTask if it chooses to do so. **You do not neet to call
-	`resume()` on this task**, it's supposed to already have started. It is being returned so you may be able to do additional stuff.
+	This method should execute the given request asynchronously.
 	
 	- parameter request: An URLRequest object that provides the URL, cache policy, request type, body data or body stream, and so on.
-	- parameter completionHandler: The completion handler to call when the load request is complete.
-	- returns: An already running session data task
+	- returns: Data and response.
 	*/
-	@discardableResult
-	open func perform(request: URLRequest, completionHandler: @escaping (Data?, URLResponse?, Error?) -> Void) -> URLSessionTask? {
-		let task = session.dataTask(with: request, completionHandler: completionHandler)
-		task.resume()
-		return task
+	open func perform(request: URLRequest) async throws -> (Data?, URLResponse) {
+		try await session.data(for: request)
 	}
 }
 
