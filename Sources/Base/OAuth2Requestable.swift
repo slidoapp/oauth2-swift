@@ -105,41 +105,40 @@ open class OAuth2Requestable {
 	open var requestPerformer: OAuth2RequestPerformer?
 	
 	/**
-	Perform the supplied request and call the callback with the response JSON dict or an error. This method is intended for authorization
+	Perform the supplied request and return the response JSON dict or throw an error. This method is intended for authorization
 	calls, not for data calls outside of the OAuth2 dance.
 	
-	This implementation uses the shared `NSURLSession` and executes a data task. If the server responds with an error, this will be
-	converted into an error according to information supplied in the response JSON (if availale).
-	
-	The callback returns a response object that is easy to use, like so:
-	
-	    perform(request: req) { response in
-	        do {
-	            let data = try response.responseData()
-	            // do what you must with `data` as Data and `response.response` as HTTPURLResponse
-	        }
-	        catch let error {
-	            // the request failed because of `error`
-	        }
-	    }
-	
-	Easy, right?
+	This implementation uses the shared `NSURLSession`. If the server responds with an error, this will be
+	converted into an error according to information supplied in the response JSON (if available).
 	
 	- parameter request:  The request to execute
-	- parameter callback: The callback to call when the request completes/fails. Looks terrifying, see above on how to use it
+	- returns : OAuth2 response
 	*/
-	open func perform(request: URLRequest, callback: @escaping ((OAuth2Response) -> Void)) {
+	open func perform(request: URLRequest) async -> OAuth2Response {
 		self.logger?.trace("OAuth2", msg: "REQUEST\n\(request.debugDescription)\n---")
 		let performer = requestPerformer ?? OAuth2DataTaskRequestPerformer(session: session)
 		requestPerformer = performer
-		let task = performer.perform(request: request) { sessData, sessResponse, error in
-			self.abortableTask = nil
-			self.logger?.trace("OAuth2", msg: "RESPONSE\n\(sessResponse?.debugDescription ?? "no response")\n\n\(String(data: sessData ?? Data(), encoding: String.Encoding.utf8) ?? "no data")\n---")
-			let http = (sessResponse as? HTTPURLResponse) ?? HTTPURLResponse(url: request.url!, statusCode: 499, httpVersion: nil, headerFields: nil)!
-			let response = OAuth2Response(data: sessData, request: request, response: http, error: error)
-			callback(response)
+		
+		do {
+			// TODO: add support for aborting the request, see https://www.hackingwithswift.com/quick-start/concurrency/how-to-cancel-a-task
+			let (sessData, sessResponse) = try await performer.perform(request: request)
+			self.logger?.trace("OAuth2", msg: "RESPONSE\n\(sessResponse.debugDescription)\n\n\(String(data: sessData ?? Data(), encoding: String.Encoding.utf8) ?? "no data")\n---")
+			
+			guard let response = sessResponse as? HTTPURLResponse else {
+				throw CommonError.castError(
+					from: String(describing: sessResponse.self),
+					to: String(describing: HTTPURLResponse.self)
+				)
+			}
+
+			return OAuth2Response(data: sessData, request: request, response: response, error: nil)
+			
+		} catch {
+			self.logger?.trace("OAuth2", msg: "RESPONSE\nno response\n\nno data\n---")
+			
+			let http = HTTPURLResponse(url: request.url!, statusCode: 499, httpVersion: nil, headerFields: nil)!
+			return OAuth2Response(data: nil, request: request, response: http, error: error)
 		}
-		abortableTask = task
 	}
 	
 	/// Currently running abortable session task.
@@ -222,3 +221,16 @@ public func callOnMainThread(_ callback: (() -> Void)) {
 	}
 }
 
+// TODO: move to a separate file
+enum CommonError: Error {
+	case castError(from: String, to: String)
+}
+
+extension CommonError: CustomStringConvertible {
+	public var description: String {
+		switch self {
+		case .castError(from: let from, to: let to):
+			return "Could not cast \(from) to \(to)"
+		}
+	}
+}

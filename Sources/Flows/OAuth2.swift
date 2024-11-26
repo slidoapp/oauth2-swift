@@ -97,76 +97,37 @@ open class OAuth2: OAuth2Base {
 	calling the callback with a failure. If client_id is not set but a "registration_uri" has been provided, a dynamic client registration
 	will be attempted and if it success, an access token will be requested.
 	
-	- parameter params:   Optional key/value pairs to pass during authorization and token refresh
-	- parameter callback: The callback to call when authorization finishes (parameters will be non-nil but may be an empty dict), fails or
-	                      is canceled (error will be non-nil, e.g. `.requestCancelled` if auth was aborted)
+	- parameter params: Optional key/value pairs to pass during authorization and token refresh
+	- returns: JSON dictionary or nil
 	*/
-	public final func authorize(params: OAuth2StringDict? = nil, callback: @escaping ((OAuth2JSON?, OAuth2Error?) -> Void)) {
-		if isAuthorizing {
-			callback(nil, OAuth2Error.alreadyAuthorizing)
-			return
+	public final func authorize(params: OAuth2StringDict? = nil) async throws -> OAuth2JSON? {
+		guard !self.isAuthorizing else {
+			throw OAuth2Error.alreadyAuthorizing
 		}
 
-		if isExchangingRefreshToken {
-			callback(nil, OAuth2Error.alreadyExchangingRefreshToken)
-			return
+		guard !isExchangingRefreshToken else {
+			throw OAuth2Error.alreadyExchangingRefreshToken
 		}
 		
-		didAuthorizeOrFail = callback
+		self.isAuthorizing = true
 		logger?.debug("OAuth2", msg: "Starting authorization")
-		tryToObtainAccessTokenIfNeeded(params: params) { successParams, error in
-			if let successParams = successParams {
+		
+		do {
+			if let successParams = try await tryToObtainAccessTokenIfNeeded(params: params) {
 				self.didAuthorize(withParameters: successParams)
+				return successParams
 			}
-			else if let error = error {
-				self.didFail(with: error)
-			}
-			else {
-				self.registerClientIfNeeded() { json, error in
-					if let error = error {
-						self.didFail(with: error)
-					}
-					else {
-						do {
-							assert(Thread.isMainThread)
-							try self.doAuthorize(params: params)
-						}
-						catch let error {
-							self.didFail(with: error.asOAuth2Error)
-						}
-					}
-				}
-			}
+			
+			_ = try await self.registerClientIfNeeded()
+			try await self.doAuthorize(params: params)
+			return nil
+			
+		} catch {
+			self.didFail(with: error.asOAuth2Error)
+			throw error.asOAuth2Error
 		}
 	}
-	
-	/**
-	Shortcut function to start embedded authorization from the given context (a UIViewController on iOS, an NSWindow on OS X).
-	
-	This method sets `authConfig.authorizeEmbedded = true` and `authConfig.authorizeContext = <# context #>`, then calls `authorize()`
-	
-	- parameter from:     The context to start authorization from, depends on platform (UIViewController or NSWindow, see `authorizeContext`)
-	- parameter params:   Optional key/value pairs to pass during authorization
-	- parameter callback: The callback to call when authorization finishes (parameters will be non-nil but may be an empty dict), fails or
-	                      is canceled (error will be non-nil, e.g. `.requestCancelled` if auth was aborted)
-	*/
-	@available(*, deprecated, message: "Use ASWebAuthenticationSession (preferred) or SFSafariWebViewController. This will be removed in v6.")
-	open func authorizeEmbedded(from context: AnyObject, params: OAuth2StringDict? = nil, callback: @escaping ((_ authParameters: OAuth2JSON?, _ error: OAuth2Error?) -> Void)) {
-		if isAuthorizing {		// `authorize()` will check this, but we want to exit before changing `authConfig`
-			callback(nil, OAuth2Error.alreadyAuthorizing)
-			return
-		}
-		
-		if (isExchangingRefreshToken) {
-			callback(nil, OAuth2Error.alreadyExchangingRefreshToken)
-			return
-		}
-		
-		authConfig.authorizeEmbedded = true
-		authConfig.authorizeContext = context
-		authorize(params: params, callback: callback)
-	}
-	
+
 	/**
 	If the instance has an accessToken, checks if its expiry time has not yet passed. If we don't have an expiry date we assume the token
 	is still valid.
@@ -192,33 +153,26 @@ open class OAuth2: OAuth2Base {
 	Indicates, in the callback, whether the client has been able to obtain an access token that is likely to still work (but there is no
 	guarantee!) or not.
 	
-	- parameter params:   Optional key/value pairs to pass during authorization
-	- parameter callback: The callback to call once the client knows whether it has an access token or not; if `success` is true an
-	                      access token is present
+	- parameter params: Optional key/value pairs to pass during authorization
+	- returns: TODO
 	*/
-	open func tryToObtainAccessTokenIfNeeded(params: OAuth2StringDict? = nil, callback: @escaping ((OAuth2JSON?, OAuth2Error?) -> Void)) {
+	open func tryToObtainAccessTokenIfNeeded(params: OAuth2StringDict? = nil) async throws -> OAuth2JSON? {
 		if hasUnexpiredAccessToken() {
 			logger?.debug("OAuth2", msg: "Have an apparently unexpired access token")
-			callback(OAuth2JSON(), nil)
+			return OAuth2JSON()
 		}
 		else {
 			logger?.debug("OAuth2", msg: "No access token, checking if a refresh token is available")
-			doRefreshToken(params: params) { successParams, error in
-				if let successParams = successParams {
-					callback(successParams, nil)
-				}
-				else {
-					var returnedError: OAuth2Error? = nil
-					if let err = error {
-						self.logger?.debug("OAuth2", msg: "Error refreshing token: \(err)")
-						switch err {
-						case .noRefreshToken, .noClientId, .unauthorizedClient:
-							returnedError = nil
-						default:
-							returnedError = err
-						}
-					}
-					callback(nil, returnedError)
+			do {
+				return try await self.doRefreshToken(params: params)
+			} catch {
+				self.logger?.debug("OAuth2", msg: "Error refreshing token: \(error)")
+			
+				switch error.asOAuth2Error {
+				case .noRefreshToken, .noClientId, .unauthorizedClient:
+					return nil
+				default:
+					throw error
 				}
 			}
 		}
@@ -232,7 +186,7 @@ open class OAuth2: OAuth2Base {
 	
 	- parameter params: Optional key/value pairs to pass during authorization
 	*/
-	open func doAuthorize(params: OAuth2StringDict? = nil) throws {
+	open func doAuthorize(params: OAuth2StringDict? = nil) async throws {
 		if authConfig.authorizeEmbedded {
 			try doAuthorizeEmbedded(with: authConfig, params: params)
 		}
@@ -375,35 +329,29 @@ open class OAuth2: OAuth2Base {
 	If the request returns an error, the refresh token is thrown away.
 	
 	- parameter params:   Optional key/value pairs to pass during token refresh
-	- parameter callback: The callback to call after the refresh token exchange has finished
+	- returns: OAuth2 JSON dictionary
 	*/
-	open func doRefreshToken(params: OAuth2StringDict? = nil, callback: @escaping ((OAuth2JSON?, OAuth2Error?) -> Void)) {
+	open func doRefreshToken(params: OAuth2StringDict? = nil) async throws -> OAuth2JSON {
 		do {
 			let post = try tokenRequestForTokenRefresh(params: params).asURLRequest(for: self)
 			logger?.debug("OAuth2", msg: "Using refresh token to receive access token from \(post.url?.description ?? "nil")")
 			
-			perform(request: post) { response in
-				do {
-					let data = try response.responseData()
-					let json = try self.parseRefreshTokenResponseData(data)
-					if response.response.statusCode >= 400 {
-						self.clientConfig.refreshToken = nil
-						throw OAuth2Error.generic("Failed with status \(response.response.statusCode)")
-					}
-					self.logger?.debug("OAuth2", msg: "Did use refresh token for access token [\(nil != self.clientConfig.accessToken)]")
-					if (self.useKeychain) {
-						self.storeTokensToKeychain()
-					}
-					callback(json, nil)
-				}
-				catch let error {
-					self.logger?.debug("OAuth2", msg: "Error refreshing access token: \(error)")
-					callback(nil, error.asOAuth2Error)
-				}
+			let response = await perform(request: post)
+			let data = try response.responseData()
+			let json = try self.parseRefreshTokenResponseData(data)
+			if response.response.statusCode >= 400 {
+				self.clientConfig.refreshToken = nil
+				throw OAuth2Error.generic("Failed with status \(response.response.statusCode)")
 			}
+			self.logger?.debug("OAuth2", msg: "Did use refresh token for access token [\(nil != self.clientConfig.accessToken)]")
+			if (self.useKeychain) {
+				self.storeTokensToKeychain()
+			}
+			
+			return json
 		}
-		catch let error {
-			callback(nil, error.asOAuth2Error)
+		catch {
+			throw error.asOAuth2Error
 		}
 	}
 	
@@ -433,16 +381,17 @@ open class OAuth2: OAuth2Base {
 
 		return req
 	}
-
+	
 	/**
 	Exchanges the subject's refresh token for audience client.
 	see: https://datatracker.ietf.org/doc/html/rfc8693
 	see: https://www.scottbrady91.com/oauth/delegation-patterns-for-oauth-20
 	- parameter audienceClientId: The client ID of the audience requesting for its own refresh token
+	- parameter traceId: Unique identifier for debugging purposes.
 	- parameter params: Optional key/value pairs to pass during token exchange
-	- parameter callback: The callback to call after the exchange of refresh token has finished
+	- returns: Exchanged refresh token
 	*/
-	open func doExchangeRefreshToken(audienceClientId: String, traceId: String, params: OAuth2StringDict? = nil, callback: @escaping ((String?, OAuth2Error?) -> Void)) {
+	open func doExchangeRefreshToken(audienceClientId: String, traceId: String, params: OAuth2StringDict? = nil) async throws -> String {
 		do {
 			guard !self.isExchangingRefreshToken else {
 				throw OAuth2Error.alreadyExchangingRefreshToken
@@ -452,44 +401,36 @@ open class OAuth2: OAuth2Base {
 			let post = try tokenRequestForExchangeRefreshToken(audienceClientId: audienceClientId, params: params).asURLRequest(for: self)
 			logger?.debug("OAuth2", msg: "Exchanging refresh token for client with ID \(audienceClientId) from \(post.url?.description ?? "nil") [trace=\(traceId)]")
 
-			perform(request: post) { response in
-				do {
-					let data = try response.responseData()
-					let json = try self.parseExchangeRefreshTokenResponseData(data)
-					if response.response.statusCode >= 400 {
-						self.clientConfig.refreshToken = nil
-						throw OAuth2Error.generic("Failed with status \(response.response.statusCode)")
-					}
-
-					// The `access_token` field contains the `requested_token_type` = the exchanged (audience) refresh token in our case.
-					//
-					// Explanation:
-					// The security token issued by the authorization server in response to the token exchange request. The access_token parameter
-					// from Section 5.1 of [RFC6749] is used here to carry the requested token, which allows this token exchange protocol to use the
-					// existing OAuth 2.0 request and response constructs defined for the token endpoint.
-					// **The identifier access_token is used for historical reasons and the issued token need not be an OAuth access token.**
-					// See: https://tools.ietf.org/id/draft-ietf-oauth-token-exchange-12.html#rfc.section.2.2.1
-					guard let exchangedRefreshToken = json["access_token"] as? String else {
-						throw OAuth2Error.generic("Exchange refresh token didn't return exchanged refresh token (response.access_token) [trace=\(traceId)]")
-					}
-					self.logger?.debug("OAuth2", msg: "Did use refresh token for exchanging refresh token [trace=\(traceId)]")
-					self.logger?.trace("OAuth2", msg: "Exchanged refresh token in [trace=\(traceId)] is [\(exchangedRefreshToken)]")
-					if self.useKeychain {
-						self.storeTokensToKeychain()
-					}
-					self.isExchangingRefreshToken = false
-					callback(exchangedRefreshToken, nil)
-				} catch let error {
-					self.logger?.debug("OAuth2", msg: "Error exchanging refresh token in [trace=\(traceId)]: \(error)")
-					self.isExchangingRefreshToken = false
-					
-					callback(nil, error.asOAuth2Error)
-				}
+			let response = await perform(request: post)
+			let data = try response.responseData()
+			let json = try self.parseExchangeRefreshTokenResponseData(data)
+			if response.response.statusCode >= 400 {
+				self.clientConfig.refreshToken = nil
+				throw OAuth2Error.generic("Failed with status \(response.response.statusCode)")
 			}
-		} catch let error {
+			
+			/// The `access_token` field contains the `requested_token_type` = the exchanged (audience) refresh token in our case.
+			///
+			/// **Explanation:**
+			/// The security token issued by the authorization server in response to the token exchange request. The access_token parameter
+			/// from Section 5.1 of [RFC6749] is used here to carry the requested token, which allows this token exchange protocol to use the
+			/// existing OAuth 2.0 request and response constructs defined for the token endpoint.
+			/// **The identifier access_token is used for historical reasons and the issued token need not be an OAuth access token.**
+			/// See: https://tools.ietf.org/id/draft-ietf-oauth-token-exchange-12.html#rfc.section.2.2.1
+			guard let exchangedRefreshToken = json["access_token"] as? String else {
+				throw OAuth2Error.generic("Exchange refresh token didn't return exchanged refresh token (response.access_token) [trace=\(traceId)]")
+			}
+			self.logger?.debug("OAuth2", msg: "Did use refresh token for exchanging refresh token [trace=\(traceId)]")
+			self.logger?.trace("OAuth2", msg: "Exchanged refresh token in [trace=\(traceId)] is [\(exchangedRefreshToken)]")
+			if self.useKeychain {
+				self.storeTokensToKeychain()
+			}
+			self.isExchangingRefreshToken = false
+			return exchangedRefreshToken
+		} catch {
 			self.logger?.debug("OAuth2", msg: "Error exchanging refresh in [trace=\(traceId)] token: \(error)")
 			self.isExchangingRefreshToken = false
-			callback(nil, error.asOAuth2Error)
+			throw error.asOAuth2Error
 		}
 	}
 	
@@ -529,34 +470,27 @@ open class OAuth2: OAuth2Base {
 
 	- parameter resourcePath: The path of the resource requesting for its own access token
 	- parameter params: Optional key/value pairs to pass during token exchange
-	- parameter callback: The callback to call after the exchange of resource access token has finished
+	- returns: Exchanged access token
 	*/
-	open func doExchangeAccessTokenForResource(resourcePath: String, params: OAuth2StringDict? = nil, callback: @escaping ((String?, OAuth2Error?) -> Void)) {
+	open func doExchangeAccessTokenForResource(resourcePath: String, params: OAuth2StringDict? = nil) async throws -> String {
 		do {
 			let post = try tokenRequestForExchangeAccessTokenForResource(resourcePath: resourcePath, params: params).asURLRequest(for: self)
 			logger?.debug("OAuth2", msg: "Exchanging access token for resource \(resourcePath) from \(post.url?.description ?? "nil")")
 
-			perform(request: post) { response in
-				do {
-					let data = try response.responseData()
-					let json = try self.parseAccessTokenResponse(data: data)
-					if response.response.statusCode >= 400 {
-						self.clientConfig.accessToken = nil
-						throw OAuth2Error.generic("Failed with status \(response.response.statusCode)")
-					}
-					guard let exchangedAccessToken = json["access_token"] as? String else {
-						throw OAuth2Error.generic("Exchange access token for resource didn't return exchanged access token (response.access_token)")
-					}
-					callback(exchangedAccessToken, nil)
-				} catch let error {
-					self.logger?.warn("OAuth2", msg: "Error exchanging access token for resource: \(error)")
-
-					callback(nil, error.asOAuth2Error)
-				}
+			let response = await perform(request: post)
+			let data = try response.responseData()
+			let json = try self.parseAccessTokenResponse(data: data)
+			if response.response.statusCode >= 400 {
+				self.clientConfig.accessToken = nil
+				throw OAuth2Error.generic("Failed with status \(response.response.statusCode)")
 			}
+			guard let exchangedAccessToken = json["access_token"] as? String else {
+				throw OAuth2Error.generic("Exchange access token for resource didn't return exchanged access token (response.access_token)")
+			}
+			return exchangedAccessToken
 		} catch let error {
 			self.logger?.debug("OAuth2", msg: "Error exchanging access token for resource \(resourcePath): \(error)")
-			callback(nil, error.asOAuth2Error)
+			throw error.asOAuth2Error
 		}
 	}
 	
@@ -569,27 +503,19 @@ open class OAuth2: OAuth2Base {
 	calls `onBeforeDynamicClientRegistration()` -- if it is non-nil -- and uses the returned `OAuth2DynReg` instance -- if it is non-nil.
 	If both are nil, instantiates a blank `OAuth2DynReg` instead, then attempts client registration.
 	
-	- parameter callback: The callback to call on the main thread; if both json and error is nil no registration was attempted; error is nil
-	                      on success
+	- returns: JSON dictionary or nil if no registration was attempted;
 	*/
-	public func registerClientIfNeeded(callback: @escaping ((OAuth2JSON?, OAuth2Error?) -> Void)) {
+	@MainActor
+	public func registerClientIfNeeded() async throws -> OAuth2JSON? {
 		if nil != clientId || !type(of: self).clientIdMandatory {
-			callOnMainThread() {
-				callback(nil, nil)
-			}
+			return nil
 		}
 		else if let url = clientConfig.registrationURL {
 			let dynreg = onBeforeDynamicClientRegistration?(url as URL) ?? OAuth2DynReg()
-			dynreg.register(client: self) { json, error in
-				callOnMainThread() {
-					callback(json, error?.asOAuth2Error)
-				}
-			}
+			return try await dynreg.register(client: self)
 		}
 		else {
-			callOnMainThread() {
-				callback(nil, OAuth2Error.noRegistrationURL)
-			}
+			throw OAuth2Error.noRegistrationURL
 		}
 	}
 }

@@ -132,14 +132,8 @@ open class OAuth2Base: OAuth2Securable {
 		set { clientConfig.customUserAgent = newValue }
 	}
 	
-	
-	/// This closure is internally used with `authorize(params:callback:)` and only exposed for subclassing reason, do not mess with it!
-	public final var didAuthorizeOrFail: ((_ parameters: OAuth2JSON?, _ error: OAuth2Error?) -> Void)?
-	
 	/// Returns true if the receiver is currently authorizing.
-	public final var isAuthorizing: Bool {
-		return nil != didAuthorizeOrFail
-	}
+	public final var isAuthorizing: Bool = false
 	
 	/// Returns true if the receiver is currently exchanging the refresh token.
 	public final var isExchangingRefreshToken: Bool = false
@@ -285,8 +279,7 @@ open class OAuth2Base: OAuth2Securable {
 			storeTokensToKeychain()
 		}
 		callOnMainThread() {
-			self.didAuthorizeOrFail?(parameters, nil)
-			self.didAuthorizeOrFail = nil
+			self.isAuthorizing = false
 			self.internalAfterAuthorizeOrFail?(false, nil)
 			self.afterAuthorizeOrFail?(parameters, nil)
 		}
@@ -309,8 +302,7 @@ open class OAuth2Base: OAuth2Securable {
 			finalError = OAuth2Error.requestCancelled
 		}
 		callOnMainThread() {
-			self.didAuthorizeOrFail?(nil, finalError)
-			self.didAuthorizeOrFail = nil
+			self.isAuthorizing = false
 			self.internalAfterAuthorizeOrFail?(true, finalError)
 			self.afterAuthorizeOrFail?(nil, finalError)
 		}
