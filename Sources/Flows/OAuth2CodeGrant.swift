@@ -21,6 +21,7 @@
 import Foundation
 #if !NO_MODULE_IMPORT
 import Base
+import Constants
 #endif
 
 
@@ -34,11 +35,11 @@ key will be embedded into the request body.
 open class OAuth2CodeGrant: OAuth2 {
 	
 	override open class var grantType: String {
-		return "authorization_code"
+		return OAuth2GrantTypes.authorizationCode
 	}
 	
 	override open class var responseType: String? {
-		return "code"
+		return OAuth2ResponseTypes.code
 	}
 	
 	

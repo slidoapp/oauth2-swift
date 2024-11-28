@@ -21,12 +21,13 @@
 import Foundation
 #if !NO_MODULE_IMPORT
 import Base
+import Constants
 #endif
 
 /// https://www.ietf.org/rfc/rfc8628.html
 open class OAuth2DeviceGrant: OAuth2 {
 	override open class var grantType: String {
-		return "urn:ietf:params:oauth:grant-type:device_code"
+		return OAuth2GrantTypes.deviceCode
 	}
 	
 	override open class var responseType: String? {
