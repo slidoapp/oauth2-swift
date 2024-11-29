@@ -69,27 +69,32 @@ class OAuth2DynRegTests: XCTestCase {
 		}
 	}
 	
-	func testNotAttemptingRegistration() {
+	func testNotAttemptingRegistration() async {
 		let oauth = genericOAuth2()
-		oauth.registerClientIfNeeded() { json, error in
-			if let error = error {
-				switch error {
-				case .noRegistrationURL: break
-				default:                 XCTAssertTrue(false, "Expecting no-registration-url error")
-				}
-			}
-			else {
-				XCTAssertTrue(false, "Should return no-registration-url error")
+		
+		do {
+			_ = try await oauth.registerClientIfNeeded()
+			XCTAssertTrue(false, "Should throw no-registration-url error")
+		} catch {
+			switch error.asOAuth2Error {
+			case .noRegistrationURL:
+				break
+			default:
+				XCTAssertTrue(false, "Expecting no-registration-url error")
 			}
 		}
 		
 		oauth.clientId = "abc"
-		oauth.registerClientIfNeeded { json, error in
-			XCTAssertNil(error, "Shouldn't even start registering")
+		
+		do {
+			let json = try await oauth.registerClientIfNeeded()
+			XCTAssertNil(json, "Shouldn't even start registering")
+		} catch {
+			XCTAssertTrue(false, "Shouldn't even start registering")
 		}
 	}
 	
-	func testCustomDynRegInstance() {
+	func testCustomDynRegInstance() async {
 		let oauth = genericOAuth2(["registration_uri": "https://register.ful.io"])
 		
 		// return subclass
@@ -97,15 +102,16 @@ class OAuth2DynRegTests: XCTestCase {
 			XCTAssertEqual(url.absoluteString, "https://register.ful.io", "Should be passed registration URL")
 			return OAuth2TestDynReg()
 		}
-		oauth.registerClientIfNeeded() { json, error in
-			if let error = error {
-				switch error {
-				case .temporarilyUnavailable: break
-				default:                      XCTAssertTrue(false, "Expecting random `TemporarilyUnavailable` error as implemented in `OAuth2TestDynReg`")
-				}
-			}
-			else {
-				XCTAssertTrue(false, "Should return no-registration-url error")
+		
+		do {
+			_ = try await oauth.registerClientIfNeeded()
+			XCTAssertTrue(false, "Should throw random `TemporarilyUnavailable` error as implemented in `OAuth2TestDynReg`")
+		} catch {
+			switch error.asOAuth2Error {
+			case .temporarilyUnavailable:
+				break
+			default:
+				XCTAssertTrue(false, "Expecting random `TemporarilyUnavailable` error as implemented in `OAuth2TestDynReg`")
 			}
 		}
 	}
@@ -113,8 +119,8 @@ class OAuth2DynRegTests: XCTestCase {
 
 
 class OAuth2TestDynReg: OAuth2DynReg {
-	override func register(client: OAuth2, callback: @escaping ((OAuth2JSON?, OAuth2Error?) -> Void)) {
-		callback(nil, OAuth2Error.temporarilyUnavailable(nil))
+	override func register(client: OAuth2) async throws -> OAuth2JSON {
+		throw OAuth2Error.temporarilyUnavailable(nil)
 	}
 }
 
