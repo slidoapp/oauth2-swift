@@ -81,7 +81,9 @@ open class OAuth2CodeGrant: OAuth2 {
 		logger?.debug("OAuth2", msg: "Handling redirect URL \(redirect.description)")
 		do {
 			let code = try validateRedirectURL(redirect)
-			exchangeCodeForToken(code)
+			Task {
+				await exchangeCodeForToken(code)
+			}
 		}
 		catch let error {
 			didFail(with: error.asOAuth2Error)
@@ -93,7 +95,7 @@ open class OAuth2CodeGrant: OAuth2 {
 	
 	Uses `accessTokenRequest(params:)` to create the request, which you can subclass to change implementation specifics.
 	*/
-	public func exchangeCodeForToken(_ code: String) {
+	public func exchangeCodeForToken(_ code: String) async {
 		do {
 			guard !code.isEmpty else {
 				throw OAuth2Error.prerequisiteFailed("I don't have a code to exchange, let the user authorize first")
@@ -102,22 +104,15 @@ open class OAuth2CodeGrant: OAuth2 {
 			let post = try accessTokenRequest(with: code).asURLRequest(for: self)
 			logger?.debug("OAuth2", msg: "Exchanging code \(code) for access token at \(post.url!)")
 			
-			perform(request: post) { response in
-				do {
-					let data = try response.responseData()
-					let params = try self.parseAccessTokenResponse(data: data)
-					if response.response.statusCode >= 400 {
-						throw OAuth2Error.generic("Failed with status \(response.response.statusCode)")
-					}
-					self.logger?.debug("OAuth2", msg: "Did exchange code for access [\(nil != self.clientConfig.accessToken)] and refresh [\(nil != self.clientConfig.refreshToken)] tokens")
-					self.didAuthorize(withParameters: params)
-				}
-				catch let error {
-					self.didFail(with: error.asOAuth2Error)
-				}
+			let response = await perform(request: post)
+			let data = try response.responseData()
+			let params = try self.parseAccessTokenResponse(data: data)
+			if response.response.statusCode >= 400 {
+				throw OAuth2Error.generic("Failed with status \(response.response.statusCode)")
 			}
-		}
-		catch let error {
+			self.logger?.debug("OAuth2", msg: "Did exchange code for access [\(nil != self.clientConfig.accessToken)] and refresh [\(nil != self.clientConfig.refreshToken)] tokens")
+			self.didAuthorize(withParameters: params)
+		} catch {
 			didFail(with: error.asOAuth2Error)
 		}
 	}
