@@ -375,7 +375,7 @@ class OAuth2CodeGrantTests: XCTestCase {
 		XCTAssertEqual(comp.host!, "auth.ful.io", "Correct host")
 	}
 	
-	func testTokenResponse() {
+	func testTokenResponse() async {
 		let settings = [
 			"client_id": "abc",
 			"client_secret": "xyz",
@@ -479,21 +479,21 @@ class OAuth2CodeGrantTests: XCTestCase {
 		performer.responseJSON = response
 		performer.responseStatus = 403
 		oauth.context.redirectURL = "https://localhost"
-		oauth.didAuthorizeOrFail = { json, error in
-			XCTAssertNil(json)
-			XCTAssertNotNil(error)
-			XCTAssertEqual(OAuth2Error.forbidden, error)
-		}
-		oauth.exchangeCodeForToken("MNOP")
+//		oauth.didAuthorizeOrFail = { json, error in
+//			XCTAssertNil(json)
+//			XCTAssertNotNil(error)
+//			XCTAssertEqual(OAuth2Error.forbidden, error)
+//		}
+		await oauth.exchangeCodeForToken("MNOP")
 		
 		// test round trip - should succeed because of good HTTP status
 		performer.responseStatus = 301
-		oauth.didAuthorizeOrFail = { json, error in
-			XCTAssertNotNil(json)
-			XCTAssertNil(error)
-			XCTAssertEqual("tGzv3JOkF0XG5Qx2TlKWIA", json?["refresh_token"] as? String)
-		}
-		oauth.exchangeCodeForToken("MNOP")
+//		oauth.didAuthorizeOrFail = { json, error in
+//			XCTAssertNotNil(json)
+//			XCTAssertNil(error)
+//			XCTAssertEqual("tGzv3JOkF0XG5Qx2TlKWIA", json?["refresh_token"] as? String)
+//		}
+		await oauth.exchangeCodeForToken("MNOP")
 	}
 }
 
@@ -504,19 +504,13 @@ class OAuth2MockPerformer: OAuth2RequestPerformer {
 	
 	var responseStatus = 200
 	
-	func perform(request: URLRequest, completionHandler callback: @escaping (Data?, URLResponse?, Error?) -> Void) -> URLSessionTask? {
+	func perform(request: URLRequest) async throws -> (Data?, URLResponse) {
 		let http = HTTPURLResponse(url: request.url!, statusCode: responseStatus, httpVersion: nil, headerFields: nil)!
-		do {
-			guard let json = responseJSON else {
-				throw OAuth2Error.noDataInResponse
-			}
-			let data = try JSONSerialization.data(withJSONObject: json, options: [])
-			callback(data, http, nil)
+		guard let json = responseJSON else {
+			throw OAuth2Error.noDataInResponse
 		}
-		catch let error {
-			callback(nil, http, error)
-		}
-		return nil
+		let data = try JSONSerialization.data(withJSONObject: json, options: [])
+		return (data, http)
 	}
 }
 
