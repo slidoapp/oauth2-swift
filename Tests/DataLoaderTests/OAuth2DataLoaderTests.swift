@@ -97,18 +97,17 @@ class OAuth2DataLoaderTests: XCTestCase {
 
 class OAuth2AnyBearerPerformer: OAuth2RequestPerformer {
 	
-	func perform(request: URLRequest, completionHandler callback: @escaping (Data?, URLResponse?, Error?) -> Void) -> URLSessionTask? {
+	func perform(request: URLRequest) async throws -> (Data?, URLResponse) {
 		let authorized = (nil != request.value(forHTTPHeaderField: "Authorization"))
 		let status = authorized ? 201 : 401
 		let http = HTTPURLResponse(url: request.url!, statusCode: status, httpVersion: nil, headerFields: nil)!
 		if authorized {
 			let data = try? JSONSerialization.data(withJSONObject: ["data": ["in": "response"]], options: [])
-			callback(data, http, nil)
+			return (data, http)
 		}
 		else {
-			callback(nil, http, nil)
+			return (nil, http)
 		}
-		return nil
 	}
 }
 
