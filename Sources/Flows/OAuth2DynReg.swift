@@ -32,6 +32,7 @@ Hence it's highly portable and can be instantiated when needed with ease.
 
 For the full OAuth2 Dynamic Client Registration spec see https://tools.ietf.org/html/rfc7591
 */
+@OAuth2Actor
 open class OAuth2DynReg {
 	
 	/// Additional HTTP headers to supply during registration.

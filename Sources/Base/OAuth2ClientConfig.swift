@@ -218,10 +218,10 @@ open class OAuth2ClientConfig {
 	
 	- returns: A storable dictionary with credentials
 	*/
-	func storableCredentialItems() -> [String: Any]? {
+	func storableCredentialItems() -> [String: any Sendable]? {
 		guard let clientId = clientId, !clientId.isEmpty else { return nil }
 		
-		var items: [String: Any] = ["id": clientId]
+		var items: [String: any Sendable] = ["id": clientId]
 		if let secret = clientSecret {
 			items["secret"] = secret
 		}
@@ -243,8 +243,8 @@ open class OAuth2ClientConfig {
 	
 	- returns: A storable dictionary with token data
 	*/
-	func storableTokenItems() -> [String: Any]? {
-		var items = [String: Any]()
+	func storableTokenItems() -> [String: any Sendable]? {
+		var items = [String: any Sendable]()
 
 		if let access = accessToken {
 			items["accessToken"] = access
