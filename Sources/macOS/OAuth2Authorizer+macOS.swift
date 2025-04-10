@@ -79,34 +79,38 @@ open class OAuth2Authorizer: OAuth2AuthorizerUI {
 	- parameter at:   The authorize URL to open
 	- throws:         Can throw OAuth2Error if the method is unable to show the authorize screen
 	*/
-	public func authorizeEmbedded(with config: OAuth2AuthConfig, at url: URL) throws {
+	public func authorizeEmbedded(with config: OAuth2AuthConfig, at url: URL) async throws {
 		if #available(macOS 10.15, *), config.ui.useAuthenticationSession {
 			guard let redirect = oauth2.redirect else {
 				throw OAuth2Error.noRedirectURL
 			}
 			
-			try startAuthenticationSession(at: url,
-										   withRedirect: redirect,
-										   prefersEphemeralWebBrowserSession: config.ui.prefersEphemeralWebBrowserSession)
+			try await startAuthenticationSession(at: url,
+												withRedirect: redirect,
+												prefersEphemeralWebBrowserSession: config.ui.prefersEphemeralWebBrowserSession)
 			return
 		}
 		
 		// present as sheet
 		if let window = config.authorizeContext as? NSWindow {
-			let sheet = try authorizeEmbedded(from: window, at: url)
+			let sheet = try await authorizeEmbedded(from: window, at: url)
 			if config.authorizeEmbeddedAutoDismiss {
 				oauth2.internalAfterAuthorizeOrFail = { wasFailure, error in
-					window.endSheet(sheet)
+					Task { @MainActor in
+						window.endSheet(sheet)
+					}
 				}
 			}
 		}
 		
 		// present in new window (or with custom block)
 		else {
-			windowController = try authorizeInNewWindow(at: url)
+			windowController = try await authorizeInNewWindow(at: url)
 			if config.authorizeEmbeddedAutoDismiss {
 				oauth2.internalAfterAuthorizeOrFail = { wasFailure, error in
-					self.windowController?.window?.close()
+					Task { @MainActor in
+						await self.windowController?.window?.close()
+					}
 					self.windowController = nil
 				}
 			}
@@ -120,7 +124,7 @@ open class OAuth2Authorizer: OAuth2AuthorizerUI {
 		at url: URL,
 		withRedirect redirect: String,
 		prefersEphemeralWebBrowserSession: Bool = false
-	) throws -> Bool {
+	) async throws -> Bool {
 		guard let redirectURL = URL(string: redirect) else {
 			throw OAuth2Error.invalidRedirectURL(redirect)
 		}
@@ -151,7 +155,7 @@ open class OAuth2Authorizer: OAuth2AuthorizerUI {
 		authenticationSession = ASWebAuthenticationSession(url: url,
 														   callbackURLScheme: redirectURL.scheme,
 														   completionHandler: completionHandler)
-		webAuthenticationPresentationContextProvider = OAuth2ASWebAuthenticationPresentationContextProvider(authorizer: self)
+		webAuthenticationPresentationContextProvider = await OAuth2ASWebAuthenticationPresentationContextProvider(authorizer: self)
 		if let session = authenticationSession as? ASWebAuthenticationSession {
 			session.presentationContextProvider = webAuthenticationPresentationContextProvider as! OAuth2ASWebAuthenticationPresentationContextProvider
 			session.prefersEphemeralWebBrowserSession = prefersEphemeralWebBrowserSession
@@ -172,13 +176,13 @@ open class OAuth2Authorizer: OAuth2AuthorizerUI {
 	*/
 	@available(macOS 10.10, *)
 	@discardableResult
-	public func authorizeEmbedded(from window: NSWindow, at url: URL) throws -> NSWindow {
-		let controller = try presentableAuthorizeViewController(at: url)
+	public func authorizeEmbedded(from window: NSWindow, at url: URL) async throws -> NSWindow {
+		let controller = try await presentableAuthorizeViewController(at: url)
 		controller.willBecomeSheet = true
-		let sheet = windowController(forViewController: controller, with: oauth2.authConfig).window!
+		let sheet = await windowController(forViewController: controller, with: oauth2.authConfig).window!
 		
-		window.makeKeyAndOrderFront(nil)
-		window.beginSheet(sheet, completionHandler: nil)
+		await window.makeKeyAndOrderFront(nil)
+		await window.beginSheet(sheet, completionHandler: nil)
 		
 		return sheet
 	}
@@ -191,12 +195,12 @@ open class OAuth2Authorizer: OAuth2AuthorizerUI {
 	*/
 	@available(macOS 10.10, *)
 	@discardableResult
-	open func authorizeInNewWindow(at url: URL) throws -> NSWindowController {
-		let controller = try presentableAuthorizeViewController(at: url)
-		let wc = windowController(forViewController: controller, with: oauth2.authConfig)
+	open func authorizeInNewWindow(at url: URL) async throws -> NSWindowController {
+		let controller = try await presentableAuthorizeViewController(at: url)
+		let wc = await windowController(forViewController: controller, with: oauth2.authConfig)
 		
-		wc.window?.center()
-		wc.showWindow(nil)
+		await wc.window?.center()
+		await wc.showWindow(nil)
 		
 		return wc
 	}
@@ -208,11 +212,12 @@ open class OAuth2Authorizer: OAuth2AuthorizerUI {
 	- returns:      A web view controller that you can present to the user for login
 	*/
 	@available(macOS 10.10, *)
-	open func presentableAuthorizeViewController(at url: URL) throws -> OAuth2WebViewController {
-		let controller = OAuth2WebViewController()
+	open func presentableAuthorizeViewController(at url: URL) async throws -> OAuth2WebViewController {
+		let controller = await OAuth2WebViewController()
 		controller.oauth = oauth2
 		controller.startURL = url
 		controller.interceptURLString = oauth2.redirect!
+	
 		controller.onIntercept = { url in
 			do {
 				try self.oauth2.handleRedirectURL(url)
@@ -224,7 +229,9 @@ open class OAuth2Authorizer: OAuth2AuthorizerUI {
 			return false
 		}
 		controller.onWillCancel = {
-			self.oauth2.didFail(with: nil)
+			Task {
+				await self.oauth2.didFail(with: nil)
+			}
 		}
 		return controller
 	}
@@ -237,6 +244,7 @@ open class OAuth2Authorizer: OAuth2AuthorizerUI {
 	- returns:                     A window controller, ready to be presented
 	*/
 	@available(macOS 10.10, *)
+	@MainActor
 	open func windowController(forViewController controller: OAuth2WebViewController, with config: OAuth2AuthConfig) -> NSWindowController {
 		let rect = NSMakeRect(0, 0, OAuth2WebViewController.webViewWindowWidth, OAuth2WebViewController.webViewWindowHeight)
 		let window = NSWindow(contentRect: rect, styleMask: [.titled, .closable, .resizable, .fullSizeContentView], backing: .buffered, defer: false)

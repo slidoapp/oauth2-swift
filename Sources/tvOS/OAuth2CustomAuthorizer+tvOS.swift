@@ -54,8 +54,10 @@ public class OAuth2CustomAuthorizer: OAuth2CustomAuthorizerUI {
 													 expectedType: String(describing: UIViewController.self))
 		}
 		
-		presentingController = parentController
-		presentingController?.present(controller, animated: animated)
+		Task {
+			presentingController = parentController
+			await presentingController?.present(controller, animated: animated)
+		}
 	}
 	
 	
@@ -65,8 +67,10 @@ public class OAuth2CustomAuthorizer: OAuth2CustomAuthorizerUI {
 	- parameter animated: Whether the dismissal should be animated.
 	*/
 	public func dismissLoginController(animated: Bool) {
-		presentingController?.dismiss(animated: animated)
-		presentingController = nil
+		Task {
+			await presentingController?.dismiss(animated: animated)
+			presentingController = nil
+		}
 	}
 }
 

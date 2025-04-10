@@ -34,6 +34,7 @@ A simple iOS web view controller that allows you to display the login/authorizat
 open class OAuth2WebViewController: UIViewController, WKNavigationDelegate {
 	
 	/// Handle to the OAuth2 instance in play, only used for debug lugging at this time.
+	@OAuth2Actor
 	var oauth: OAuth2Base?
 	
 	/// The URL to load on first show.
@@ -46,6 +47,7 @@ open class OAuth2WebViewController: UIViewController, WKNavigationDelegate {
 	}
 	
 	/// The URL string to intercept and respond to.
+	@OAuth2Actor
 	var interceptURLString: String? {
 		didSet(oldURL) {
 			if let interceptURLString = interceptURLString {
@@ -62,10 +64,13 @@ open class OAuth2WebViewController: UIViewController, WKNavigationDelegate {
 			}
 		}
 	}
+	
+	@OAuth2Actor
 	var interceptComponents: URLComponents?
 	
 	/// Closure called when the web view gets asked to load the redirect URL, specified in `interceptURLString`. Return a Bool indicating
 	/// that you've intercepted the URL.
+	@OAuth2Actor
 	var onIntercept: ((URL) -> Bool)?
 	
 	/// Called when the web view is about to be dismissed. The Bool indicates whether the request was (user-)canceled.
@@ -196,28 +201,28 @@ open class OAuth2WebViewController: UIViewController, WKNavigationDelegate {
 	
 	// MARK: - Web View Delegate
 	
-	open func webView(_ webView: WKWebView, decidePolicyFor navigationAction: WKNavigationAction, decisionHandler: @escaping (WKNavigationActionPolicy) -> Swift.Void) {
-		guard let onIntercept = onIntercept else {
-			decisionHandler(.allow)
-			return
-		}
-		let request = navigationAction.request
-		
-		// we compare the scheme and host first, then check the path (if there is any). Not sure if a simple string comparison
-		// would work as there may be URL parameters attached
-		if let url = request.url, url.scheme == interceptComponents?.scheme && url.host == interceptComponents?.host {
-			let haveComponents = URLComponents(url: url, resolvingAgainstBaseURL: true)
-			if let hp = haveComponents?.path, let ip = interceptComponents?.path, hp == ip || ("/" == hp + ip) {
-				if onIntercept(url) {
-					decisionHandler(.cancel)
-				}
-				else {
-					decisionHandler(.allow)
-				}
-				return
+	open func webView(_ webView: WKWebView, decidePolicyFor navigationAction: WKNavigationAction) async -> WKNavigationActionPolicy {
+		return await Task { @OAuth2Actor in
+			guard let onIntercept = onIntercept else {
+				return .allow
 			}
-		}
-		decisionHandler(.allow)
+			let request = await navigationAction.request
+			
+			// we compare the scheme and host first, then check the path (if there is any). Not sure if a simple string comparison
+			// would work as there may be URL parameters attached
+			if let url = request.url, url.scheme == interceptComponents?.scheme && url.host == interceptComponents?.host {
+				let haveComponents = URLComponents(url: url, resolvingAgainstBaseURL: true)
+				if let hp = haveComponents?.path, let ip = interceptComponents?.path, hp == ip || ("/" == hp + ip) {
+					if onIntercept(url) {
+						return .cancel
+					}
+					else {
+						return .allow
+					}
+				}
+			}
+			return .allow
+		}.value
 	}
 	
 	open func webView(_ webView: WKWebView, didStartProvisionalNavigation navigation: WKNavigation!) {
@@ -227,21 +232,23 @@ open class OAuth2WebViewController: UIViewController, WKNavigationDelegate {
 	}
 	
 	open func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
-		if let scheme = interceptComponents?.scheme, "urn" == scheme {
-			if let path = interceptComponents?.path, path.hasPrefix("ietf:wg:oauth:2.0:oob") {
-				if let title = webView.title, title.hasPrefix("Success ") {
-					oauth?.logger?.debug("OAuth2", msg: "Creating redirect URL from document.title")
-					let qry = title.replacingOccurrences(of: "Success ", with: "")
-					if let url = URL(string: "http://localhost/?\(qry)") {
-						_ = onIntercept?(url)
-						return
+		Task { @OAuth2Actor in
+			if let scheme = interceptComponents?.scheme, "urn" == scheme {
+				if let path = interceptComponents?.path, path.hasPrefix("ietf:wg:oauth:2.0:oob") {
+					if let title = await webView.title, title.hasPrefix("Success ") {
+						oauth?.logger?.debug("OAuth2", msg: "Creating redirect URL from document.title")
+						let qry = title.replacingOccurrences(of: "Success ", with: "")
+						if let url = URL(string: "http://localhost/?\(qry)") {
+							_ = onIntercept?(url)
+							return
+						}
+						oauth?.logger?.warn("OAuth2", msg: "Failed to create a URL with query parts \"\(qry)\"")
 					}
-					oauth?.logger?.warn("OAuth2", msg: "Failed to create a URL with query parts \"\(qry)\"")
 				}
 			}
+			await hideLoadingIndicator()
+			await showHideBackButton(webView.canGoBack)
 		}
-		hideLoadingIndicator()
-		showHideBackButton(webView.canGoBack)
 	}
 	
 	open func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) {

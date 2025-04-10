@@ -22,6 +22,10 @@ import Foundation
 import CommonCrypto
 
 
+@globalActor public actor OAuth2Actor : GlobalActor {
+	public static let shared = OAuth2Actor()
+}
+
 /**
 Class extending on OAuth2Requestable, exposing configuration and maintaining context, serving as base class for `OAuth2`.
 */

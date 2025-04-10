@@ -22,7 +22,7 @@ import Foundation
 
 
 /// Typealias to ease working with JSON dictionaries.
-public typealias OAuth2JSON = [String: Any]
+public typealias OAuth2JSON = [String: any Sendable]
 
 /// Typealias to work with dictionaries full of strings.
 public typealias OAuth2StringDict = [String: String]
@@ -34,6 +34,7 @@ public typealias OAuth2Headers = [String: String]
 /**
 Abstract base class for OAuth2 authorization as well as client registration classes.
 */
+@OAuth2Actor
 open class OAuth2Requestable {
 	
 	/// Set to `true` to log all the things. `false` by default. Use `"verbose": bool` in settings or assign `logger` yourself.

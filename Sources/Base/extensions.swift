@@ -34,7 +34,7 @@ extension HTTPURLResponse {
 
 extension String {
 	
-	fileprivate static var wwwFormURLPlusSpaceCharacterSet: CharacterSet = CharacterSet.wwwFormURLPlusSpaceCharacterSet
+	fileprivate static let wwwFormURLPlusSpaceCharacterSet: CharacterSet = CharacterSet.wwwFormURLPlusSpaceCharacterSet
 	
 	/// Encodes a string to become x-www-form-urlencoded; the space is encoded as plus sign (+).
 	var wwwFormURLEncodedString: String {
@@ -73,6 +73,7 @@ extension CharacterSet {
 }
 
 
+@OAuth2Actor
 extension URLRequest {
 	
 	/** A string describing the request, including headers and body. */

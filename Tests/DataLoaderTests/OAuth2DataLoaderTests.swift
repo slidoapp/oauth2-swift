@@ -59,26 +59,21 @@ class OAuth2DataLoaderTests: XCTestCase {
 		loader!.requestPerformer = dataPerformer
 	}
 	
-	func testAutoEnqueue() {
+	func testAutoEngueue() async {
 		XCTAssertNil(oauth2!.accessToken)
-		let req1 = oauth2!.request(forURL: URL(string: "http://auth.io/data/user")!)
-		let wait1 = expectation(description: "req1")
-		loader!.perform(request: req1) { response in
-			XCTAssertNotNil(self.oauth2!.accessToken)
-			do {
-				let json = try response.responseJSON()
-				XCTAssertNotNil(json["data"])
-			}
-			catch let error {
-				XCTAssertNil(error)
-			}
-			wait1.fulfill()
-		}
 		
+		let req1 = oauth2!.request(forURL: URL(string: "http://auth.io/data/user")!)
 		let req2 = oauth2!.request(forURL: URL(string: "http://auth.io/data/home")!)
-		let wait2 = expectation(description: "req2")
-		loader!.perform(request: req2) { response in
-			XCTAssertNotNil(self.oauth2!.accessToken)
+		
+		async let perform1 = loader!.perform(request: req1)
+		async let perform2 = loader!.perform(request: req2)
+
+		// Execute requests in parallel
+		let responses = await [perform1, perform2]
+		
+		XCTAssertNotNil(self.oauth2!.accessToken)
+			
+		for response in responses {
 			do {
 				let json = try response.responseJSON()
 				XCTAssertNotNil(json["data"])
@@ -86,12 +81,42 @@ class OAuth2DataLoaderTests: XCTestCase {
 			catch let error {
 				XCTAssertNil(error)
 			}
-			wait2.fulfill()
-		}
-		waitForExpectations(timeout: 4.0) { error in
-			XCTAssertNil(error)
 		}
 	}
+	
+//	func testAutoEnqueue_() {
+//		XCTAssertNil(oauth2!.accessToken)
+//		let req1 = oauth2!.request(forURL: URL(string: "http://auth.io/data/user")!)
+//		let wait1 = expectation(description: "req1")
+//		loader!.perform(request: req1) { response in
+//			XCTAssertNotNil(self.oauth2!.accessToken)
+//			do {
+//				let json = try response.responseJSON()
+//				XCTAssertNotNil(json["data"])
+//			}
+//			catch let error {
+//				XCTAssertNil(error)
+//			}
+//			wait1.fulfill()
+//		}
+//		
+//		let req2 = oauth2!.request(forURL: URL(string: "http://auth.io/data/home")!)
+//		let wait2 = expectation(description: "req2")
+//		loader!.perform(request: req2) { response in
+//			XCTAssertNotNil(self.oauth2!.accessToken)
+//			do {
+//				let json = try response.responseJSON()
+//				XCTAssertNotNil(json["data"])
+//			}
+//			catch let error {
+//				XCTAssertNil(error)
+//			}
+//			wait2.fulfill()
+//		}
+//		waitForExpectations(timeout: 4.0) { error in
+//			XCTAssertNil(error)
+//		}
+//	}
 }
 
 
