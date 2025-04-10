@@ -66,6 +66,7 @@ public enum OAuth2EndpointAuthMethod: String {
 /**
 Class representing an OAuth2 authorization request that can be used to create NSURLRequest instances.
 */
+@OAuth2Actor
 open class OAuth2AuthRequest {
 	
 	/// The url of the receiver. Queries may by added by parameters specified on `params`.

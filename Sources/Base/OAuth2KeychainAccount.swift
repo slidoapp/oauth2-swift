@@ -20,13 +20,14 @@
 
 import Foundation
 #if !NO_KEYCHAIN_IMPORT     // needs to be imported when using `swift build`, not when building via Xcode
-import SwiftKeychain
+@preconcurrency import SwiftKeychain
 #endif
 
 
 /**
 Keychain integration handler for OAuth2.
 */
+@OAuth2Actor
 struct OAuth2KeychainAccount: KeychainGenericPasswordType {
 	
 	/// The service name to use.
@@ -52,7 +53,7 @@ struct OAuth2KeychainAccount: KeychainGenericPasswordType {
 	- parameter account: The account name to use
 	- parameter data:    Data that we want to store to the keychain
 	*/
-	init(oauth2: OAuth2Securable, account: String, data inData: [String: Any] = [:]) {
+	init(oauth2: OAuth2Securable, account: String, data inData: [String: any Sendable] = [:]) {
 		serviceName = oauth2.keychainServiceName()
 		accountName = account
 		accessMode = String(oauth2.keychainAccessMode)
@@ -74,7 +75,7 @@ extension KeychainGenericPasswordType {
 	
 	- returns: A [String: Any] dictionary of data fetched from the keychain
 	*/
-	mutating func fetchedFromKeychain() throws -> [String: Any] {
+	mutating func fetchedFromKeychain() throws -> [String: any Sendable] {
 		do {
 			try _ = fetchFromKeychain()
 			return data

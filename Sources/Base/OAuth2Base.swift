@@ -22,6 +22,10 @@ import Foundation
 import CommonCrypto
 
 
+@globalActor public actor OAuth2Actor : GlobalActor {
+	public static let shared = OAuth2Actor()
+}
+
 /**
 Class extending on OAuth2Requestable, exposing configuration and maintaining context, serving as base class for `OAuth2`.
 */
@@ -202,18 +206,18 @@ open class OAuth2Base: OAuth2Securable {
 		return authURL.description
 	}
 	
-	override open func updateFromKeychainItems(_ items: [String: Any]) {
+	override open func updateFromKeychainItems(_ items: [String: any Sendable]) {
 		for message in clientConfig.updateFromStorableItems(items) {
 			logger?.debug("OAuth2", msg: message)
 		}
 		clientConfig.secretInBody = (clientConfig.endpointAuthMethod == OAuth2EndpointAuthMethod.clientSecretPost)
 	}
 	
-	override open func storableCredentialItems() -> [String: Any]? {
+	override open func storableCredentialItems() -> [String: any Sendable]? {
 		return clientConfig.storableCredentialItems()
 	}
 	
-	override open func storableTokenItems() -> [String: Any]? {
+	override open func storableTokenItems() -> [String: any Sendable]? {
 		return clientConfig.storableTokenItems()
 	}
 	

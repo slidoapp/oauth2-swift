@@ -134,7 +134,7 @@ open class OAuth2Securable: OAuth2Requestable {
 	}
 	
 	/** Updates instance properties according to the items found in the given dictionary, which was found in the keychain. */
-	func updateFromKeychainItems(_ items: [String: Any]) {
+	func updateFromKeychainItems(_ items: [String: any Sendable]) {
 	}
 	
 	/**
@@ -142,7 +142,7 @@ open class OAuth2Securable: OAuth2Requestable {
 	
 	- returns: A dictionary with `String` keys and `Any` items
 	*/
-	open func storableCredentialItems() -> [String: Any]? {
+	open func storableCredentialItems() -> [String: any Sendable]? {
 		return nil
 	}
 	
@@ -166,7 +166,7 @@ open class OAuth2Securable: OAuth2Requestable {
 	
 	- returns: A dictionary with `String` keys and `Any` items
 	*/
-	open func storableTokenItems() -> [String: Any]? {
+	open func storableTokenItems() -> [String: any Sendable]? {
 		return nil
 	}
 	

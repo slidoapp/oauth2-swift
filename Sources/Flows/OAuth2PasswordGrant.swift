@@ -102,7 +102,7 @@ open class OAuth2PasswordGrant: OAuth2 {
 	*/
 	override open func doAuthorize(params: OAuth2StringDict? = nil) async throws {
 		if username?.isEmpty ?? true || password?.isEmpty ?? true {
-			try askForCredentials()
+			try await askForCredentials()
 		}
 		else {
 			do {
@@ -119,7 +119,7 @@ open class OAuth2PasswordGrant: OAuth2 {
 	
 	- parameter params: Optional key/value pairs to pass during authorization
 	*/
-	private func askForCredentials(params: OAuth2StringDict? = nil) throws {
+	private func askForCredentials(params: OAuth2StringDict? = nil) async throws {
 		logger?.debug("OAuth2", msg: "Presenting the login controller")
 		guard let delegate = delegate else {
 			throw OAuth2Error.noPasswordGrantDelegate
@@ -137,7 +137,8 @@ open class OAuth2PasswordGrant: OAuth2 {
 		// tell the custom authorizer to present the login screen
 		customAuthParams = params
 		let controller = delegate.loginController(oauth2: self)
-		try customAuthorizer.present(loginController: controller, fromContext: authConfig.authorizeContext, animated: true)
+		
+		try await customAuthorizer.present(loginController: controller, fromContext: authConfig.authorizeContext, animated: true)
 	}
 	
 	/**

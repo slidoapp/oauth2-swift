@@ -35,7 +35,7 @@ Instances of this class are returned from `OAuth2Requestable` calls, they can be
 		// the request failed because of `error`
 	}
 */
-open class OAuth2Response {
+open class OAuth2Response: @unchecked Sendable {
 	
 	/// The data that was returned.
 	open var data: Data?
