@@ -31,6 +31,7 @@ import OAuth2
 #endif
 
 
+@OAuth2Actor
 class OAuth2DynRegTests: XCTestCase {
 	
 	func genericOAuth2(_ extra: OAuth2JSON? = nil) -> OAuth2 {
