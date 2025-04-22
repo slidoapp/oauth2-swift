@@ -31,6 +31,7 @@ import OAuth2
 #endif
 
 
+@OAuth2Actor
 class OAuth2Tests: XCTestCase {
 	
 	func genericOAuth2() -> OAuth2 {

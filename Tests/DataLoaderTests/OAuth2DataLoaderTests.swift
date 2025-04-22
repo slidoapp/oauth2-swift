@@ -33,6 +33,7 @@ import XCTest
 #endif
 
 
+@OAuth2Actor
 class OAuth2DataLoaderTests: XCTestCase {
 	
 	var oauth2: OAuth2PasswordGrant?
@@ -43,8 +44,7 @@ class OAuth2DataLoaderTests: XCTestCase {
 	
 	var dataPerformer: OAuth2AnyBearerPerformer?
 	
-	override func setUp() {
-		super.setUp()
+	override func setUp() async throws {
 		authPerformer = OAuth2MockPerformer()
 		authPerformer!.responseJSON = ["access_token": "toktok", "token_type": "bearer"]
 		oauth2 = OAuth2PasswordGrant(settings: ["client_id": "abc", "authorize_url": "https://oauth.io/authorize", "keychain": false] as OAuth2JSON)
@@ -65,8 +65,9 @@ class OAuth2DataLoaderTests: XCTestCase {
 		let req1 = oauth2!.request(forURL: URL(string: "http://auth.io/data/user")!)
 		let req2 = oauth2!.request(forURL: URL(string: "http://auth.io/data/home")!)
 		
-		async let perform1 = loader!.perform(request: req1)
-		async let perform2 = loader!.perform(request: req2)
+		let loader = self.loader!
+		async let perform1 = loader.perform(request: req1)
+		async let perform2 = loader.perform(request: req2)
 
 		// Execute requests in parallel
 		let responses = await [perform1, perform2]

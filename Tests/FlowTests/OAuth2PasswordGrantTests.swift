@@ -31,6 +31,7 @@ import OAuth2
 #endif
 
 
+@OAuth2Actor
 class OAuth2PasswordGrantTests: XCTestCase {
 	
 	func genericOAuth2Password() -> OAuth2PasswordGrant {
