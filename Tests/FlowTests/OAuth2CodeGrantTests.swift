@@ -31,6 +31,7 @@ import OAuth2
 #endif
 
 
+@OAuth2Actor
 class OAuth2CodeGrantTests: XCTestCase {
 	
 	lazy var baseSettings: OAuth2JSON = [
