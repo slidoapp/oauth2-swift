@@ -1,0 +1,16 @@
+{
+  "object": {
+    "pins": [
+      {
+        "package": "SwiftKeychain",
+        "repositoryURL": "https://github.com/slidoapp/SwiftKeychain.git",
+        "state": {
+          "branch": "master",
+          "revision": "bbdd3f93a3e79604e561668efbdbbc79c3c78aaf",
+          "version": null
+        }
+      }
+    ]
+  },
+  "version": 1
+}

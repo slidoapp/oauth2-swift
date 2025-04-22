@@ -17,10 +17,10 @@ jobs:
         swift: ['swift6', 'swift5']
         include:
           - swift: 'swift6'
-            xcode-path: '/Applications/Xcode_16.0.0.app'
+            xcode-path: '/Applications/Xcode_16.2.app'
             macos: 'macos-14'
           - swift: 'swift5'
-            xcode-path: '/Applications/Xcode_15.4.0.app'
+            xcode-path: '/Applications/Xcode_15.4.app'
             macos: 'macos-14'
     
     env:
