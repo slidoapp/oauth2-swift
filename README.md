@@ -374,7 +374,6 @@ let oauth2 = OAuth2CodeGrant(settings: [
 - [Facebook](https://github.com/p2/OAuth2/wiki/Facebook)
 - [Reddit](https://github.com/p2/OAuth2/wiki/Reddit)
 - [Google](https://github.com/p2/OAuth2/wiki/Google)
-- [LinkedIn](https://github.com/p2/OAuth2/wiki/LinkedIn)
 - [Instagram, Bitly, Pinterest, ...](https://github.com/p2/OAuth2/wiki/Instagram,-Bitly,-Pinterest-and-others)
 - [Uber](https://github.com/p2/OAuth2/wiki/Uber)
 - [BitBucket](https://github.com/p2/OAuth2/wiki/BitBucket)
