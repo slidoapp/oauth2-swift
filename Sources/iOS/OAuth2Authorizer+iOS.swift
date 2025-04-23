@@ -64,12 +64,16 @@ open class OAuth2Authorizer: OAuth2AuthorizerUI {
 	public func openAuthorizeURLInBrowser(_ url: URL) throws {
 		
 		#if !P2_APP_EXTENSIONS && !os(visionOS)
-		guard UIApplication.shared.canOpenURL(url) else {
-			throw OAuth2Error.unableToOpenAuthorizeURL
-		}
-		UIApplication.shared.open(url) { didOpen in
-			if !didOpen {
-				self.oauth2.logger?.warn("OAuth2", msg: "Unable to open authorize URL")
+		Task {
+			guard await UIApplication.shared.canOpenURL(url) else {
+				throw OAuth2Error.unableToOpenAuthorizeURL
+			}
+			await UIApplication.shared.open(url) { didOpen in
+				if !didOpen {
+					Task { @OAuth2Actor in
+						self.oauth2.logger?.warn("OAuth2", msg: "Unable to open authorize URL")
+					}
+				}
 			}
 		}
 		#else
@@ -84,7 +88,7 @@ open class OAuth2Authorizer: OAuth2AuthorizerUI {
 	- parameter with: The configuration to be used; usually uses the instance's `authConfig`
 	- parameter at:   The authorize URL to open
 	*/
-	public func authorizeEmbedded(with config: OAuth2AuthConfig, at url: URL) throws {
+	public func authorizeEmbedded(with config: OAuth2AuthConfig, at url: URL) async throws {
 		if config.ui.useAuthenticationSession {
 			guard let redirect = oauth2.redirect else {
 				throw OAuth2Error.noRedirectURL
@@ -99,11 +103,13 @@ open class OAuth2Authorizer: OAuth2AuthorizerUI {
 				throw (nil == config.authorizeContext) ? OAuth2Error.noAuthorizationContext : OAuth2Error.invalidAuthorizationContext
 			}
 			
-			let web = try authorizeSafariEmbedded(from: controller, at: url)
+			let web = try await authorizeSafariEmbedded(from: controller, at: url)
 			if config.authorizeEmbeddedAutoDismiss {
 				oauth2.internalAfterAuthorizeOrFail = { wasFailure, error in
 					self.safariViewDelegate = nil
-					web.dismiss(animated: true)
+					Task {
+						await web.dismiss(animated: true)
+					}
 				}
 			}
 			#endif
@@ -199,23 +205,35 @@ open class OAuth2Authorizer: OAuth2AuthorizerUI {
 	- returns:        SFSafariViewController, being already presented automatically
 	*/
 	@discardableResult
-	public func authorizeSafariEmbedded(from controller: UIViewController, at url: URL) throws -> SFSafariViewController {
-		safariViewDelegate = OAuth2SFViewControllerDelegate(authorizer: self)
-		let web = SFSafariViewController(url: url)
-		web.title = oauth2.authConfig.ui.title
-		web.delegate = safariViewDelegate
-		if let barTint = oauth2.authConfig.ui.barTintColor {
-			web.preferredBarTintColor = barTint
-		}
-		if let tint = oauth2.authConfig.ui.controlTintColor {
-			web.preferredControlTintColor = tint
-		}
-		web.modalPresentationStyle = oauth2.authConfig.ui.modalPresentationStyle
-		
-		willPresent(viewController: web, in: nil)
-		controller.present(web, animated: true, completion: nil)
-		web.presentationController?.delegate = safariViewDelegate
-		return web
+	public func authorizeSafariEmbedded(from controller: UIViewController, at url: URL) async throws -> SFSafariViewController {
+		return await Task {
+			safariViewDelegate = await OAuth2SFViewControllerDelegate(authorizer: self)
+			let web = await SFSafariViewController(url: url)
+			Task { @MainActor in
+				web.title = await oauth2.authConfig.ui.title
+				web.delegate = await safariViewDelegate
+			}
+			if let barTint = oauth2.authConfig.ui.barTintColor {
+				Task { @MainActor in
+					web.preferredBarTintColor = barTint
+				}
+			}
+			if let tint = oauth2.authConfig.ui.controlTintColor {
+				Task { @MainActor in
+					web.preferredControlTintColor = tint
+				}
+			}
+			Task { @MainActor in
+				web.modalPresentationStyle = await oauth2.authConfig.ui.modalPresentationStyle
+			}
+			
+			willPresent(viewController: web, in: nil)
+			await controller.present(web, animated: true, completion: nil)
+			Task { @MainActor in
+				web.presentationController?.delegate = await safariViewDelegate
+			}
+			return web
+		}.value
 	}
 	
 	
@@ -245,19 +263,24 @@ class OAuth2SFViewControllerDelegate: NSObject, SFSafariViewControllerDelegate, 
 	}
 	
 	@available(iOS 9.0, *)
-	func safariViewControllerDidFinish(_ controller: SFSafariViewController) {
-		authorizer?.safariViewControllerDidCancel(controller)
+	nonisolated func safariViewControllerDidFinish(_ controller: SFSafariViewController) {
+		Task {
+			await authorizer?.safariViewControllerDidCancel(controller)
+		}
 	}
 
     // called in case ViewController is dismissed via pulling down the presented sheet.
     func presentationControllerDidDismiss(_ presentationController: UIPresentationController) {
         guard let safariViewController = presentationController.presentedViewController as? SFSafariViewController else { return }
-        authorizer?.safariViewControllerDidCancel(safariViewController)
+		Task {
+			await authorizer?.safariViewControllerDidCancel(safariViewController)
+		}
     }
 }
 #endif
 
 @available(iOS 13.0, *)
+@OAuth2Actor
 class OAuth2ASWebAuthenticationPresentationContextProvider: NSObject, ASWebAuthenticationPresentationContextProviding {
 	
 	private let authorizer: OAuth2Authorizer
@@ -266,6 +289,7 @@ class OAuth2ASWebAuthenticationPresentationContextProvider: NSObject, ASWebAuthe
 		self.authorizer = authorizer
 	}
 	
+	@OAuth2Actor
 	public func presentationAnchor(for session: ASWebAuthenticationSession) -> ASPresentationAnchor {
 		if let context = authorizer.oauth2.authConfig.authorizeContext as? ASPresentationAnchor {
 			return context
