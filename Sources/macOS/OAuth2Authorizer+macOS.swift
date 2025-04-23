@@ -274,6 +274,7 @@ class OAuth2ASWebAuthenticationPresentationContextProvider: NSObject, ASWebAuthe
 		self.authorizer = authorizer
 	}
 	
+	@OAuth2Actor /// For Xcode 15, we need to specify the `@OAuth2Actor` explicitly, but in Xcode 16 this is no longer necessary. 🤷‍♂️
 	public func presentationAnchor(for session: ASWebAuthenticationSession) -> ASPresentationAnchor {
 		if let context = authorizer.oauth2.authConfig.authorizeContext as? ASPresentationAnchor {
 			return context
