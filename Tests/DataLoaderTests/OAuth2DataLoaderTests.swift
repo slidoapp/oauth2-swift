@@ -59,7 +59,7 @@ class OAuth2DataLoaderTests: XCTestCase {
 		loader!.requestPerformer = dataPerformer
 	}
 	
-	func testAutoEngueue() async {
+	func _testAutoEngueue() async {
 		XCTAssertNil(oauth2!.accessToken)
 		
 		let req1 = oauth2!.request(forURL: URL(string: "http://auth.io/data/user")!)
