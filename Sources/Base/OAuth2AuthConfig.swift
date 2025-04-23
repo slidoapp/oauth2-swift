@@ -34,9 +34,6 @@ public struct OAuth2AuthConfig: Sendable {
 		/// Title to propagate to views handled by OAuth2, such as OAuth2WebViewController.
 		public var title: String? = nil
 		
-		/// Starting with iOS 9, `SFSafariViewController` will be used for embedded authorization instead of our custom class. You can turn this off here.
-		public var useSafariView = false
-		
 		/// Starting with iOS 12, `ASWebAuthenticationSession` can be used for embedded authorization instead of our custom class. You can turn this on here.
 		public var useAuthenticationSession = true
 		

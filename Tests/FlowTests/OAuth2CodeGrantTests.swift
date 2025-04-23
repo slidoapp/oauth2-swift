@@ -402,15 +402,6 @@ class OAuth2CodeGrantTests: XCTestCase {
 			XCTAssertNil(error, "Should not throw wrong error")
 		}
 		
-		// LinkedIn on the other hand must not throw
-		let linkedin = OAuth2CodeGrantLinkedIn(settings: settings)
-		do {
-			_ = try linkedin.parseAccessTokenResponse(params: response)
-		}
-		catch let error {
-			XCTAssertNil(error, "Should not throw")
-		}
-		
 		// Nor the generic no-token-type class
 		let noType = OAuth2CodeGrantNoTokenType(settings: settings)
 		do {

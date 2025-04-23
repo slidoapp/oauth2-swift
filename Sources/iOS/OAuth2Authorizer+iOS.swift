@@ -99,21 +99,11 @@ open class OAuth2Authorizer: OAuth2AuthorizerUI {
 				throw (nil == config.authorizeContext) ? OAuth2Error.noAuthorizationContext : OAuth2Error.invalidAuthorizationContext
 			}
 			
-			if config.ui.useSafariView {
-				let web = try authorizeSafariEmbedded(from: controller, at: url)
-				if config.authorizeEmbeddedAutoDismiss {
-					oauth2.internalAfterAuthorizeOrFail = { wasFailure, error in
-						self.safariViewDelegate = nil
-						web.dismiss(animated: true)
-					}
-				}
-			}
-			else {
-				let web = try authorizeEmbedded(from: controller, at: url)
-				if config.authorizeEmbeddedAutoDismiss {
-					oauth2.internalAfterAuthorizeOrFail = { wasFailure, error in
-						web.dismiss(animated: true)
-					}
+			let web = try authorizeSafariEmbedded(from: controller, at: url)
+			if config.authorizeEmbeddedAutoDismiss {
+				oauth2.internalAfterAuthorizeOrFail = { wasFailure, error in
+					self.safariViewDelegate = nil
+					web.dismiss(animated: true)
 				}
 			}
 			#endif
@@ -236,72 +226,6 @@ open class OAuth2Authorizer: OAuth2AuthorizerUI {
 	func safariViewControllerDidCancel(_ safari: SFSafariViewController) {
 		safariViewDelegate = nil
 		oauth2.didFail(with: nil)
-	}
-	
-	
-	// MARK: - Custom Web View Controller
-	
-	/**
-	Presents a web view controller, contained in a UINavigationController, on the supplied view controller and loads the authorize URL.
-	
-	Automatically intercepts the redirect URL and performs the token exchange. It does NOT however dismiss the web view controller
-	automatically, you probably want to do this in the callback. Simply call this method first, then assign that closure in which you call
-	`dismissViewController()` on the returned web view controller instance.
-	
-	- parameter from: The view controller to use for presentation
-	- parameter at:   The authorize URL to open
-	- returns: OAuth2WebViewController, embedded in a UINavigationController being presented automatically
-	*/
-	@available(*, deprecated, message: "Use ASWebAuthenticationSession (preferred) or SFSafariWebViewController. This will be removed in v6.")
-	public func authorizeEmbedded(from controller: UIViewController, at url: URL) throws -> OAuth2WebViewController {
-		guard let redirect = oauth2.redirect else {
-			throw OAuth2Error.noRedirectURL
-		}
-		return presentAuthorizeView(forURL: url, intercept: redirect, from: controller)
-	}
-	
-	/**
-	Presents and returns a web view controller loading the given URL and intercepting the given URL.
-	
-	- returns: OAuth2WebViewController, embedded in a UINavigationController being presented automatically
-	*/
-	@available(*, deprecated, message: "Use ASWebAuthenticationSession (preferred) or SFSafariWebViewController. This will be removed in v6.")
-	final func presentAuthorizeView(forURL url: URL, intercept: String, from controller: UIViewController) -> OAuth2WebViewController {
-		let web = OAuth2WebViewController()
-		web.title = oauth2.authConfig.ui.title
-		web.backButton = oauth2.authConfig.ui.backButton as? UIBarButtonItem
-		web.showCancelButton = oauth2.authConfig.ui.showCancelButton
-		web.startURL = url
-		web.interceptURLString = intercept
-		web.onIntercept = { url in
-			do {
-				try self.oauth2.handleRedirectURL(url as URL)
-				return true
-			}
-			catch let err {
-				self.oauth2.logger?.warn("OAuth2", msg: "Cannot intercept redirect URL: \(err)")
-			}
-			return false
-		}
-		web.onWillDismiss = { didCancel in
-			if didCancel {
-				self.oauth2.didFail(with: nil)
-			}
-		}
-		
-		let navi = UINavigationController(rootViewController: web)
-		navi.modalPresentationStyle = oauth2.authConfig.ui.modalPresentationStyle
-		if let barTint = oauth2.authConfig.ui.barTintColor {
-			navi.navigationBar.barTintColor = barTint
-		}
-		if let tint = oauth2.authConfig.ui.controlTintColor {
-			navi.navigationBar.tintColor = tint
-		}
-		
-		willPresent(viewController: web, in: navi)
-		controller.present(navi, animated: true)
-		
-		return web
 	}
 	#endif
 }
