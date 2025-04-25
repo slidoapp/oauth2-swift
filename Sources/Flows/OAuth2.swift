@@ -119,8 +119,7 @@ open class OAuth2: OAuth2Base {
 			}
 			
 			_ = try await self.registerClientIfNeeded()
-			try await self.doAuthorize(params: params)
-			return nil
+			return try await self.doAuthorize(params: params)
 			
 		} catch {
 			self.didFail(with: error.asOAuth2Error)
@@ -186,13 +185,15 @@ open class OAuth2: OAuth2Base {
 	
 	- parameter params: Optional key/value pairs to pass during authorization
 	*/
-	open func doAuthorize(params: OAuth2StringDict? = nil) async throws {
+	open func doAuthorize(params: OAuth2StringDict? = nil) async throws -> OAuth2JSON? {
 		if authConfig.authorizeEmbedded {
 			try await doAuthorizeEmbedded(with: authConfig, params: params)
 		}
 		else {
 			try doOpenAuthorizeURLInBrowser(params: params)
 		}
+		
+		return nil // TODO
 	}
 	
 	/**
