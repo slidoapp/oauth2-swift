@@ -100,16 +100,19 @@ open class OAuth2PasswordGrant: OAuth2 {
 	
 	- parameter params: Optional key/value pairs to pass during authorization
 	*/
-	override open func doAuthorize(params: OAuth2StringDict? = nil) async throws {
+	override open func doAuthorize(params: OAuth2StringDict? = nil) async throws -> OAuth2JSON? {
 		if username?.isEmpty ?? true || password?.isEmpty ?? true {
 			try await askForCredentials()
+			return nil // TODO
 		}
 		else {
 			do {
 				let resultParams = try await obtainAccessToken(params: params)
 				self.didAuthorize(withParameters: resultParams)
+				return resultParams
 			} catch {
 				self.didFail(with: error.asOAuth2Error)
+				return nil
 			}
 		}
 	}

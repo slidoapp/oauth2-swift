@@ -34,12 +34,14 @@ open class OAuth2ClientCredentials: OAuth2 {
 		return OAuth2GrantTypes.clientCredentials
 	}
 	
-	override open func doAuthorize(params inParams: OAuth2StringDict? = nil) async {
+	override open func doAuthorize(params inParams: OAuth2StringDict? = nil) async throws -> OAuth2JSON? {
 		do {
 			let result = try await self.obtainAccessToken()
 			self.didAuthorize(withParameters: result)
+			return result
 		} catch {
 			self.didFail(with: error.asOAuth2Error)
+			return nil
 		}
 	}
 	

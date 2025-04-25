@@ -28,7 +28,8 @@ import Flows
 /**
 A class that makes loading data from a protected endpoint easier.
 */
-open class OAuth2DataLoader: OAuth2Requestable {
+@OAuth2Actor
+open class OAuth2DataLoader {
 	
 	/// The OAuth2 instance used for OAuth2 access tokvarretrieval.
 	public let oauth2: OAuth2
@@ -36,7 +37,12 @@ open class OAuth2DataLoader: OAuth2Requestable {
 	/// If set to true, a 403 is treated as a 401. The default is false.
 	public var alsoIntercept403: Bool = false
 	
+	var logger: OAuth2Logger? {
+		self.oauth2.logger
+	}
 	
+	private let requester: OAuth2Requestable
+
 	/**
 	Designated initializer.
 	
@@ -45,11 +51,15 @@ open class OAuth2DataLoader: OAuth2Requestable {
 	- parameter oauth2: The OAuth2 instance to use for authorization when loading data.
 	- parameter host:   If given will handle redirects within the same host by way of `OAuth2DataLoaderSessionTaskDelegate`
 	*/
-	public init(oauth2: OAuth2, host: String? = nil) {
+	public init(oauth2: OAuth2, host: String? = nil, requestPerformer: OAuth2RequestPerformer? = nil) {
 		self.oauth2 = oauth2
-		super.init(logger: oauth2.logger)
-		if let host = host {
-			sessionDelegate = OAuth2DataLoaderSessionTaskDelegate(loader: self, host: host)
+		self.requester = OAuth2Requestable(logger: oauth2.logger)
+
+		if let host {
+			self.requester.sessionDelegate = OAuth2DataLoaderSessionTaskDelegate(loader: self, host: host)
+		}
+		if let requestPerformer {
+			self.requester.requestPerformer = requestPerformer
 		}
 	}
 	
@@ -113,7 +123,7 @@ open class OAuth2DataLoader: OAuth2Requestable {
 		}
 		
 		Task {
-			let response = await super.perform(request: request)
+			let response = await self.requester.perform(request: request)
 			
 			do {
 				if self.alsoIntercept403, 403 == response.response.statusCode {
