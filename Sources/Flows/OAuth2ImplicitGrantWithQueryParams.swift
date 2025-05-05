@@ -32,7 +32,7 @@ import Base
  */
 open class OAuth2ImplicitGrantWithQueryParams: OAuth2ImplicitGrant {
 
-	override open func handleRedirectURL(_ redirect: URL) {
+	override open func handleRedirectURL(_ redirect: URL) async throws -> OAuth2JSON {
 		logger?.debug("OAuth2", msg: "Handling redirect URL \(redirect.description)")
 		do {
 			// token should be in the URL query
@@ -45,9 +45,11 @@ open class OAuth2ImplicitGrantWithQueryParams: OAuth2ImplicitGrant {
 			let dict = try parseAccessTokenResponse(params: params)
 			logger?.debug("OAuth2", msg: "Successfully extracted access token")
 			didAuthorize(withParameters: dict)
+			return dict
 		}
 		catch let error {
 			didFail(with: error.asOAuth2Error)
+			throw error
 		}
 	}
 }
