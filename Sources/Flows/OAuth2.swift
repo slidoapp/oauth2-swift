@@ -186,14 +186,21 @@ open class OAuth2: OAuth2Base {
 	- parameter params: Optional key/value pairs to pass during authorization
 	*/
 	open func doAuthorize(params: OAuth2StringDict? = nil) async throws -> OAuth2JSON? {
-		if authConfig.authorizeEmbedded {
-			try await doAuthorizeEmbedded(with: authConfig, params: params)
+		return try await withCheckedThrowingContinuation { continuation in
+			Task {
+				do {
+					if authConfig.authorizeEmbedded {
+						try await doAuthorizeEmbedded(with: authConfig, params: params)
+					}
+					else {
+						try doOpenAuthorizeURLInBrowser(params: params)
+					}
+					self.doAuthorizeContinuation = continuation
+				} catch {
+					continuation.resume(throwing: error)
+				}
+			}
 		}
-		else {
-			try doOpenAuthorizeURLInBrowser(params: params)
-		}
-		
-		return nil // TODO
 	}
 	
 	/**
@@ -229,7 +236,7 @@ open class OAuth2: OAuth2Base {
 	Method that creates the OAuth2AuthRequest instance used to create the authorize URL
 	
 	- parameter redirect: The redirect URI string to supply. If it is nil, the first value of the settings' `redirect_uris` entries is
-	                      used. Must be present in the end!
+						  used. Must be present in the end!
 	- parameter scope:    The scope to request
 	- parameter params:   Any additional parameters as dictionary with string keys and values that will be added to the query part
 	- returns:            OAuth2AuthRequest to be used to call to the authorize endpoint
@@ -279,7 +286,7 @@ open class OAuth2: OAuth2Base {
 	Convenience method to be overridden by and used from subclasses.
 	
 	- parameter redirect: The redirect URI string to supply. If it is nil, the first value of the settings' `redirect_uris` entries is
-	                      used. Must be present in the end!
+						  used. Must be present in the end!
 	- parameter scope:    The scope to request
 	- parameter params:   Any additional parameters as dictionary with string keys and values that will be added to the query part
 	- returns:            NSURL to be used to start the OAuth dance

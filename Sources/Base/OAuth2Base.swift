@@ -102,7 +102,7 @@ open class OAuth2Base: OAuth2Securable {
 	
 	/// The receiver's id token.
 	open var idToken: String? {
-		get { return clientConfig.idToken }	
+		get { return clientConfig.idToken }
 		set { clientConfig.idToken = newValue }
 	}
 
@@ -157,6 +157,7 @@ open class OAuth2Base: OAuth2Securable {
 	*/
 	public final var internalAfterAuthorizeOrFail: ((_ wasFailure: Bool, _ error: OAuth2Error?) -> Void)?
 	
+	public final var doAuthorizeContinuation: CheckedContinuation<OAuth2JSON, any Error>?
 	
 	/**
 	Designated initializer.
@@ -266,7 +267,8 @@ open class OAuth2Base: OAuth2Securable {
 	
 	- parameter redirect: The redirect URL returned by the server that you want to handle
 	*/
-	open func handleRedirectURL(_ redirect: URL) throws {
+	@discardableResult
+	open func handleRedirectURL(_ redirect: URL) async throws -> OAuth2JSON {
 		throw OAuth2Error.generic("Abstract class use")
 	}
 	
@@ -287,6 +289,10 @@ open class OAuth2Base: OAuth2Securable {
 			self.internalAfterAuthorizeOrFail?(false, nil)
 			self.afterAuthorizeOrFail?(parameters, nil)
 		}
+		
+		// Finish `doAuthorize` call
+		self.doAuthorizeContinuation?.resume(returning: parameters)
+		self.doAuthorizeContinuation = nil
 	}
 	
 	/**
@@ -310,6 +316,10 @@ open class OAuth2Base: OAuth2Securable {
 			self.internalAfterAuthorizeOrFail?(true, finalError)
 			self.afterAuthorizeOrFail?(nil, finalError)
 		}
+		
+		// Finish `doAuthorize` call
+		self.doAuthorizeContinuation?.resume(throwing: error ?? OAuth2Error.requestCancelled)
+		self.doAuthorizeContinuation = nil
 	}
 	
 	/**

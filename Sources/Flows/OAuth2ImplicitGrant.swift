@@ -38,7 +38,7 @@ open class OAuth2ImplicitGrant: OAuth2 {
 		return OAuth2ResponseTypes.token
 	}
 	
-	override open func handleRedirectURL(_ redirect: URL) {
+	override open func handleRedirectURL(_ redirect: URL) async throws -> OAuth2JSON {
 		logger?.debug("OAuth2", msg: "Handling redirect URL \(redirect.description)")
 		do {
 			// token should be in the URL fragment
@@ -51,9 +51,11 @@ open class OAuth2ImplicitGrant: OAuth2 {
 			let dict = try parseAccessTokenResponse(params: params)
 			logger?.debug("OAuth2", msg: "Successfully extracted access token")
 			didAuthorize(withParameters: dict)
+			return dict
 		}
-		catch let error {
+		catch {
 			didFail(with: error.asOAuth2Error)
+			throw error
 		}
 	}
 	

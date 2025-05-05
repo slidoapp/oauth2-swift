@@ -84,7 +84,7 @@ public class OAuth2WebViewController: NSViewController, WKNavigationDelegate, NS
 	/// Closure called when the web view gets asked to load the redirect URL, specified in `interceptURLString`. Return a Bool indicating
 	/// that you've intercepted the URL.
 	@OAuth2Actor
-	public var onIntercept: ((URL) -> Bool)?
+	public var onIntercept: ((URL) async -> Bool)?
 	
 	/// Called when the web view is about to be dismissed manually.
 	@OAuth2Actor
@@ -264,7 +264,7 @@ public class OAuth2WebViewController: NSViewController, WKNavigationDelegate, NS
 			if let url = request.url, url.scheme == interceptComponents?.scheme && url.host == interceptComponents?.host {
 				let haveComponents = URLComponents(url: url, resolvingAgainstBaseURL: true)
 				if let hp = haveComponents?.path, let ip = interceptComponents?.path, hp == ip || ("/" == hp + ip) {
-					if onIntercept(url) {
+					if await onIntercept(url) {
 						return .cancel
 					}
 					else {
@@ -285,7 +285,7 @@ public class OAuth2WebViewController: NSViewController, WKNavigationDelegate, NS
 						oauth?.logger?.debug("OAuth2", msg: "Creating redirect URL from document.title")
 						let qry = title.replacingOccurrences(of: "Success ", with: "")
 						if let url = URL(string: "http://localhost/?\(qry)") {
-							_ = onIntercept?(url)
+							_ = await onIntercept?(url)
 							return
 						}
 						
