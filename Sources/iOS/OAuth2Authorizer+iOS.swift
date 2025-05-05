@@ -152,11 +152,13 @@ open class OAuth2Authorizer: OAuth2AuthorizerUI {
 		}
 		let completionHandler: (URL?, Error?) -> Void = { url, error in
 			if let url = url {
-				do {
-					try self.oauth2.handleRedirectURL(url as URL)
-				}
-				catch let err {
-					self.oauth2.logger?.warn("OAuth2", msg: "Cannot intercept redirect URL: \(err)")
+				Task {
+					do {
+						try await self.oauth2.handleRedirectURL(url as URL)
+					}
+					catch {
+						self.oauth2.logger?.warn("OAuth2", msg: "Cannot intercept redirect URL: \(error)")
+					}
 				}
 			} else {
 				if let authenticationSessionError = error as? ASWebAuthenticationSessionError {
