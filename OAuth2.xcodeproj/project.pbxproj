@@ -46,6 +46,7 @@
 		879EE6F72CF61295008B3D74 /* OAuth2TokenTypeIdentifiers.swift in Sources */ = {isa = PBXBuildFile; fileRef = 879EE6EE2CF61295008B3D74 /* OAuth2TokenTypeIdentifiers.swift */; };
 		879EE6F82CF61295008B3D74 /* OAuth2GrantTypes.swift in Sources */ = {isa = PBXBuildFile; fileRef = 879EE6EC2CF61295008B3D74 /* OAuth2GrantTypes.swift */; };
 		87B3E07C29F6AF240075C4DC /* OAuth2DeviceGrantTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 87B3E07B29F6AF240075C4DC /* OAuth2DeviceGrantTests.swift */; };
+		87FABDD32DC8D77000E0C67B /* XCTAssertThrowsErrorAsync.swift in Sources */ = {isa = PBXBuildFile; fileRef = 87FABDD22DC8D77000E0C67B /* XCTAssertThrowsErrorAsync.swift */; };
 		CCCE40D6B4EAD9BF05C92ACE /* OAuth2CustomAuthorizer+iOS.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCCE4C8DC3CB7713E59BC1EE /* OAuth2CustomAuthorizer+iOS.swift */; };
 		DD0CCBAD1C4DC83A0044C4E3 /* OAuth2WebViewController+macOS.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD0CCBAC1C4DC83A0044C4E3 /* OAuth2WebViewController+macOS.swift */; };
 		EA9758181B222CEA007744B1 /* OAuth2PasswordGrant.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA9758171B222CEA007744B1 /* OAuth2PasswordGrant.swift */; };
@@ -187,6 +188,7 @@
 		879EE6ED2CF61295008B3D74 /* OAuth2ResponseTypes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OAuth2ResponseTypes.swift; sourceTree = "<group>"; };
 		879EE6EE2CF61295008B3D74 /* OAuth2TokenTypeIdentifiers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OAuth2TokenTypeIdentifiers.swift; sourceTree = "<group>"; };
 		87B3E07B29F6AF240075C4DC /* OAuth2DeviceGrantTests.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = OAuth2DeviceGrantTests.swift; sourceTree = "<group>"; };
+		87FABDD22DC8D77000E0C67B /* XCTAssertThrowsErrorAsync.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = XCTAssertThrowsErrorAsync.swift; sourceTree = "<group>"; };
 		CCCE4C8DC3CB7713E59BC1EE /* OAuth2CustomAuthorizer+iOS.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = "OAuth2CustomAuthorizer+iOS.swift"; sourceTree = "<group>"; };
 		DD0CCBAC1C4DC83A0044C4E3 /* OAuth2WebViewController+macOS.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = "OAuth2WebViewController+macOS.swift"; sourceTree = "<group>"; };
 		EA9758171B222CEA007744B1 /* OAuth2PasswordGrant.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; lineEnding = 0; path = OAuth2PasswordGrant.swift; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.swift; };
@@ -303,6 +305,14 @@
 				879EE6EE2CF61295008B3D74 /* OAuth2TokenTypeIdentifiers.swift */,
 			);
 			path = Constants;
+			sourceTree = "<group>";
+		};
+		87FABDD52DC8D7C300E0C67B /* Utils */ = {
+			isa = PBXGroup;
+			children = (
+				87FABDD22DC8D77000E0C67B /* XCTAssertThrowsErrorAsync.swift */,
+			);
+			path = Utils;
 			sourceTree = "<group>";
 		};
 		EE2486281AC85DD4002B31AF /* iOS */ = {
@@ -474,6 +484,7 @@
 				EE4EBD801D7FF38200E6A9CA /* Flows */,
 				EEB9A9811D86CD540022EF66 /* DataLoader */,
 				EEE209A419427DFE00736F1A /* Supporting Files */,
+				87FABDD52DC8D7C300E0C67B /* Utils */,
 			);
 			path = Tests;
 			sourceTree = "<group>";
@@ -806,6 +817,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				EE4EBD8D1D7FF38200E6A9CA /* OAuth2PasswordGrantTests.swift in Sources */,
+				87FABDD32DC8D77000E0C67B /* XCTAssertThrowsErrorAsync.swift in Sources */,
 				EE4EBD881D7FF38200E6A9CA /* OAuth2AuthRequestTests.swift in Sources */,
 				EE4EBD891D7FF38200E6A9CA /* OAuth2ClientCredentialsTests.swift in Sources */,
 				871279852DB7DD1B00A5AF72 /* OAuth2ExchangeAccessTokenForResourceTests.swift in Sources */,

@@ -376,7 +376,7 @@ class OAuth2CodeGrantTests: XCTestCase {
 		XCTAssertEqual(comp.host!, "auth.ful.io", "Correct host")
 	}
 	
-	func testTokenResponse() async {
+	func testTokenResponse() async throws {
 		let settings = [
 			"client_id": "abc",
 			"client_secret": "xyz",
@@ -471,21 +471,16 @@ class OAuth2CodeGrantTests: XCTestCase {
 		performer.responseJSON = response
 		performer.responseStatus = 403
 		oauth.context.redirectURL = "https://localhost"
-//		oauth.didAuthorizeOrFail = { json, error in
-//			XCTAssertNil(json)
-//			XCTAssertNotNil(error)
-//			XCTAssertEqual(OAuth2Error.forbidden, error)
-//		}
-		await oauth.exchangeCodeForToken("MNOP")
+
+		await XCTAssertThrowsErrorAsync(try await oauth.exchangeCodeForToken("MNOP")) { error in
+			XCTAssertEqual(OAuth2Error.forbidden, error.asOAuth2Error)
+		}
 		
 		// test round trip - should succeed because of good HTTP status
 		performer.responseStatus = 301
-//		oauth.didAuthorizeOrFail = { json, error in
-//			XCTAssertNotNil(json)
-//			XCTAssertNil(error)
-//			XCTAssertEqual("tGzv3JOkF0XG5Qx2TlKWIA", json?["refresh_token"] as? String)
-//		}
-		await oauth.exchangeCodeForToken("MNOP")
+
+		let json = try await oauth.exchangeCodeForToken("MNOP")
+		XCTAssertEqual("tGzv3JOkF0XG5Qx2TlKWIA", json["refresh_token"] as? String)
 	}
 }
 
