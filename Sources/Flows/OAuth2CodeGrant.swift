@@ -77,16 +77,15 @@ open class OAuth2CodeGrant: OAuth2 {
 	/**
 	Extracts the code from the redirect URL and exchanges it for a token.
 	*/
-	override open func handleRedirectURL(_ redirect: URL) {
+	override open func handleRedirectURL(_ redirect: URL) async throws -> OAuth2JSON {
 		logger?.debug("OAuth2", msg: "Handling redirect URL \(redirect.description)")
 		do {
 			let code = try validateRedirectURL(redirect)
-			Task {
-				await exchangeCodeForToken(code)
-			}
+			return try await exchangeCodeForToken(code)
 		}
-		catch let error {
+		catch {
 			didFail(with: error.asOAuth2Error)
+			throw error
 		}
 	}
 	
@@ -95,7 +94,7 @@ open class OAuth2CodeGrant: OAuth2 {
 	
 	Uses `accessTokenRequest(params:)` to create the request, which you can subclass to change implementation specifics.
 	*/
-	public func exchangeCodeForToken(_ code: String) async {
+	public func exchangeCodeForToken(_ code: String) async throws -> OAuth2JSON {
 		do {
 			guard !code.isEmpty else {
 				throw OAuth2Error.prerequisiteFailed("I don't have a code to exchange, let the user authorize first")
@@ -112,8 +111,10 @@ open class OAuth2CodeGrant: OAuth2 {
 			}
 			self.logger?.debug("OAuth2", msg: "Did exchange code for access [\(nil != self.clientConfig.accessToken)] and refresh [\(nil != self.clientConfig.refreshToken)] tokens")
 			self.didAuthorize(withParameters: params)
+			return params
 		} catch {
 			didFail(with: error.asOAuth2Error)
+			throw error
 		}
 	}
 	
