@@ -71,12 +71,14 @@ extension KeychainGenericPasswordType {
 	
 	- returns: A [String: Any] dictionary of data fetched from the keychain
 	*/
-	mutating func fetchedFromKeychain() throws -> [String: any Sendable] {
+	@OAuth2Actor mutating func fetchedFromKeychain(logger: OAuth2Logger?) throws -> [String: any Sendable] {
 		do {
-			try _ = fetchFromKeychain()
+			let fetched = try fetchFromKeychain()
+			logger?.debug("OAuth2", msg: "fetchFromKeychain, fetched: \(fetched), data: \(data)")
 			return data
 		}
 		catch let error where error._domain == "swift.keychain.error" && error._code == Int(errSecItemNotFound) {
+			logger?.warn("OAuth2", msg: "Keychain item not found, returning empty dictionary")
 			return [:]
 		}
 	}

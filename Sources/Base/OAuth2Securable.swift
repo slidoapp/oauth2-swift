@@ -114,7 +114,7 @@ open class OAuth2Securable: OAuth2Requestable {
 		
 		do {
 			var creds = OAuth2KeychainAccount(oauth2: self, account: keychainAccountForClientCredentials)
-			let creds_data = try creds.fetchedFromKeychain()
+			let creds_data = try creds.fetchedFromKeychain(logger: logger)
 			updateFromKeychainItems(creds_data)
 			logger?.trace("OAuth2", msg: "Client credentials updated from keychain: \(creds_data)")
 		}
@@ -124,7 +124,8 @@ open class OAuth2Securable: OAuth2Requestable {
 		
 		do {
 			var toks = OAuth2KeychainAccount(oauth2: self, account: keychainAccountForTokens)
-			let toks_data = try toks.fetchedFromKeychain()
+			logger?.debug("OAuth2", msg: "Fetching tokens from keychain account: \(keychainAccountForTokens)")
+			let toks_data = try toks.fetchedFromKeychain(logger: logger)
 			updateFromKeychainItems(toks_data)
 			logger?.trace("OAuth2", msg: "Tokens updated from keychain: \(toks_data)")
 		}
