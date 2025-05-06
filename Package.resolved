@@ -5,8 +5,8 @@
         "package": "SwiftKeychain",
         "repositoryURL": "https://github.com/slidoapp/SwiftKeychain.git",
         "state": {
-          "branch": "master",
-          "revision": "bbdd3f93a3e79604e561668efbdbbc79c3c78aaf",
+          "branch": null,
+          "revision": "cf3b22c8040133b84802607ace9114ce0c446a24",
           "version": null
         }
       }

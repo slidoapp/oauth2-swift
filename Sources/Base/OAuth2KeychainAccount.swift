@@ -36,7 +36,7 @@ struct OAuth2KeychainAccount: KeychainGenericPasswordType {
 	var accessGroup: String?
 	
 	/// Data that ends up in the keychain.
-	var data = KeychainData()
+	var data = [String: Any]()
 	
 	/// Keychain access mode.
 	let accessMode: String
@@ -62,7 +62,7 @@ struct OAuth2KeychainAccount: KeychainGenericPasswordType {
 extension KeychainGenericPasswordType {
 	
 	/// Data to store to the keychain.
-	var dataToStore: KeychainData {
+	var dataToStore: [String: Any] {
 		return data
 	}
 	

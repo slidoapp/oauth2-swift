@@ -1266,8 +1266,8 @@
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/slidoapp/SwiftKeychain";
 			requirement = {
-				branch = master;
-				kind = branch;
+				kind = revision;
+				revision = cf3b22c8040133b84802607ace9114ce0c446a24;
 			};
 		};
 /* End XCRemoteSwiftPackageReference section */
