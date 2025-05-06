@@ -1,5 +1,10 @@
-import XCTest
+#if !NO_MODULE_IMPORT
+import Base
+#else
 import OAuth2
+#endif
+
+import XCTest
 
 /// Asserts that an asynchronous expression throws an error.
 /// (Intended to function as a drop-in asynchronous version of `XCTAssertThrowsError`.)
@@ -21,7 +26,7 @@ import OAuth2
 ///     The default is the line number where you call this function.
 ///   - errorHandler: An optional handler for errors that expression throws.
 @OAuth2Actor
-func XCTAssertThrowsErrorAsync<T: Sendable>(
+public func XCTAssertThrowsErrorAsync<T: Sendable>(
 	_ expression: @autoclosure () async throws -> T,
 	_ message: @autoclosure () -> String = "",
 	file: StaticString = #filePath,
