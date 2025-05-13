@@ -1,4 +1,4 @@
-// swift-tools-version:5.3
+// swift-tools-version:5.5
 //
 //  Package.swift
 //  OAuth2
@@ -30,14 +30,12 @@ let package = Package(
 		.library(name: "OAuth2", targets: ["OAuth2"]),
 	],
 	dependencies: [
-		// SwiftKeychain is not yet available as a Package, so we symlink to /Sources and make it a Target
-		//.package(url: "https://github.com/yankodimitrov/SwiftKeychain.git", majorVersion: 1),
+		.package(url: "https://github.com/slidoapp/SwiftKeychain.git", branch: "master"),
 	],
 	targets: [
 		.target(name: "OAuth2",
 			dependencies: ["Base", "Flows", "DataLoader"]),
-		.target(name: "SwiftKeychain"),
-		.target(name: "Base", dependencies: [.target(name: "SwiftKeychain")]),
+		.target(name: "Base", dependencies: ["SwiftKeychain"]),
 		.target(name: "macOS", dependencies: [.target(name: "Base")]),
 		.target(name: "iOS", dependencies: [.target(name: "Base")]),
 		.target(name: "tvOS", dependencies: [.target(name: "Base")]),

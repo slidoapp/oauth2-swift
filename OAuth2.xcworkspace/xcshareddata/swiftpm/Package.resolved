@@ -1,0 +1,15 @@
+{
+  "originHash" : "0c82c9b0cc5a936aab0be4b3aea29b49e944acfcfa25c8b7b5c351fcb30eb19c",
+  "pins" : [
+    {
+      "identity" : "swiftkeychain",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/slidoapp/SwiftKeychain",
+      "state" : {
+        "branch" : "master",
+        "revision" : "bbdd3f93a3e79604e561668efbdbbc79c3c78aaf"
+      }
+    }
+  ],
+  "version" : 3
+}
