@@ -30,7 +30,7 @@ let package = Package(
 		.library(name: "OAuth2", targets: ["OAuth2"]),
 	],
 	dependencies: [
-		.package(url: "https://github.com/slidoapp/SwiftKeychain.git", branch: "master"),
+		.package(url: "https://github.com/slidoapp/SwiftKeychain.git", .upToNextMinor(from: "2.1.0")),
 	],
 	targets: [
 		.target(name: "OAuth2",

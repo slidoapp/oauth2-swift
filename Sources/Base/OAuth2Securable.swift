@@ -113,7 +113,7 @@ open class OAuth2Securable: OAuth2Requestable {
 		logger?.debug("OAuth2", msg: "Looking for items in keychain")
 		
 		do {
-			var creds = OAuth2KeychainAccount(oauth2: self, account: keychainAccountForClientCredentials)
+			var creds = OAuth2KeychainAccount(oauth2: self, account: keychainAccountForClientCredentials, classes: storableCredentialClasses())
 			let creds_data = try creds.fetchedFromKeychain()
 			updateFromKeychainItems(creds_data)
 			logger?.trace("OAuth2", msg: "Client credentials updated from keychain: \(creds_data)")
@@ -123,7 +123,7 @@ open class OAuth2Securable: OAuth2Requestable {
 		}
 		
 		do {
-			var toks = OAuth2KeychainAccount(oauth2: self, account: keychainAccountForTokens)
+			var toks = OAuth2KeychainAccount(oauth2: self, account: keychainAccountForTokens, classes: storableTokenClasses())
 			let toks_data = try toks.fetchedFromKeychain()
 			updateFromKeychainItems(toks_data)
 			logger?.trace("OAuth2", msg: "Tokens updated from keychain: \(toks_data)")
@@ -134,7 +134,11 @@ open class OAuth2Securable: OAuth2Requestable {
 	}
 	
 	/** Updates instance properties according to the items found in the given dictionary, which was found in the keychain. */
-	func updateFromKeychainItems(_ items: [String: Any]) {
+	func updateFromKeychainItems(_ items: [String: any Sendable]) {
+	}
+	
+	open func storableCredentialClasses() -> [AnyClass] {
+		return []
 	}
 	
 	/**
@@ -142,7 +146,7 @@ open class OAuth2Securable: OAuth2Requestable {
 	
 	- returns: A dictionary with `String` keys and `Any` items
 	*/
-	open func storableCredentialItems() -> [String: Any]? {
+	open func storableCredentialItems() -> [String: any Sendable]? {
 		return nil
 	}
 	
@@ -150,7 +154,7 @@ open class OAuth2Securable: OAuth2Requestable {
 	open func storeClientToKeychain() {
 		if let items = storableCredentialItems() {
 			logger?.debug("OAuth2", msg: "Storing client credentials to keychain")
-			let keychain = OAuth2KeychainAccount(oauth2: self, account: keychainAccountForClientCredentials, data: items)
+			let keychain = OAuth2KeychainAccount(oauth2: self, account: keychainAccountForClientCredentials, data: items, classes: storableCredentialClasses())
 			do {
 				try keychain.saveInKeychain()
 				logger?.trace("OAuth2", msg: "Client credentials stored to keychain: \(items)")
@@ -161,12 +165,16 @@ open class OAuth2Securable: OAuth2Requestable {
 		}
 	}
 	
+	open func storableTokenClasses() -> [AnyClass] {
+		return []
+	}
+	
 	/**
 	Items that should be stored when tokens are stored to the keychain.
 	
 	- returns: A dictionary with `String` keys and `Any` items
 	*/
-	open func storableTokenItems() -> [String: Any]? {
+	open func storableTokenItems() -> [String: any Sendable]? {
 		return nil
 	}
 	
@@ -174,7 +182,7 @@ open class OAuth2Securable: OAuth2Requestable {
 	public func storeTokensToKeychain() {
 		if let items = storableTokenItems() {
 			logger?.debug("OAuth2", msg: "Storing tokens to keychain")
-			let keychain = OAuth2KeychainAccount(oauth2: self, account: keychainAccountForTokens, data: items)
+			let keychain = OAuth2KeychainAccount(oauth2: self, account: keychainAccountForTokens, data: items, classes: storableTokenClasses())
 			do {
 				try keychain.saveInKeychain()
 				logger?.trace("OAuth2", msg: "Tokens stored to keychain: \(items)")
