@@ -205,6 +205,15 @@ open class OAuth2ClientConfig {
 	}
 	
 	/**
+	Enumerates all classes used for storing credential items.
+	
+	- returns: An array containing all classes used for storing credential items
+	*/
+	func storableCredentialClasses() -> [AnyClass] {
+		return []
+	}
+	
+	/**
 	Creates a dictionary of credential items that can be stored to the keychain.
 	
 	- returns: A storable dictionary with credentials
@@ -218,6 +227,15 @@ open class OAuth2ClientConfig {
 		}
 		items["endpointAuthMethod"] = endpointAuthMethod.rawValue
 		return items
+	}
+	
+	/**
+	Enumerates all classes used for storing token items.
+	
+	- returns: An array containing all classes used for storing token items
+	*/
+	func storableTokenClasses() -> [AnyClass] {
+		return [NSDate.self]
 	}
 	
 	/**

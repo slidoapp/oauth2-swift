@@ -208,18 +208,26 @@ open class OAuth2Base: OAuth2Securable {
 		return authURL.description
 	}
 	
-	override open func updateFromKeychainItems(_ items: [String: Any]) {
+	override open func updateFromKeychainItems(_ items: [String: any Sendable]) {
 		for message in clientConfig.updateFromStorableItems(items) {
 			logger?.debug("OAuth2", msg: message)
 		}
 		clientConfig.secretInBody = (clientConfig.endpointAuthMethod == OAuth2EndpointAuthMethod.clientSecretPost)
 	}
 	
-	override open func storableCredentialItems() -> [String: Any]? {
+	override open func storableCredentialClasses() -> [AnyClass] {
+		return clientConfig.storableCredentialClasses()
+	}
+	
+	override open func storableCredentialItems() -> [String: any Sendable]? {
 		return clientConfig.storableCredentialItems()
 	}
 	
-	override open func storableTokenItems() -> [String: Any]? {
+	override open func storableTokenClasses() -> [AnyClass] {
+		return clientConfig.storableTokenClasses()
+	}
+	
+	override open func storableTokenItems() -> [String: any Sendable]? {
 		return clientConfig.storableTokenItems()
 	}
 	
