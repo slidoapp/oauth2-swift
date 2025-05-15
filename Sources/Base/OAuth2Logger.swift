@@ -64,6 +64,7 @@ A simple protocol for loggers used in OAuth2.
 The `OAuth2DebugLogger` is a simple implementation that logs to stdout. If you need more sophisticated logging, just adapt this protocol
 and set your logger on the `OAuth2` instance you're using.
 */
+@OAuth2Actor
 public protocol OAuth2Logger {
 	
 	/// The logger's logging level.

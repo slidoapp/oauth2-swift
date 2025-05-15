@@ -24,6 +24,7 @@ import SwiftKeychain
 /**
 Keychain integration handler for OAuth2.
 */
+@OAuth2Actor
 struct OAuth2KeychainAccount: KeychainGenericPasswordType {
 	/// The service name to use.
 	let serviceName: String
@@ -75,7 +76,7 @@ extension KeychainGenericPasswordType {
 	
 	- returns: A [String: Any] dictionary of data fetched from the keychain
 	*/
-	mutating func fetchedFromKeychain() throws -> [String: Any] {
+	mutating func fetchedFromKeychain() throws -> [String: any Sendable] {
 		do {
 			try _ = fetchFromKeychain()
 			return data

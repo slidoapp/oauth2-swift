@@ -26,17 +26,16 @@ Encapsulates a URLResponse to a URLRequest.
 
 Instances of this class are returned from `OAuth2Requestable` calls, they can be used like so:
 
-    perform(request: req) { response in
-        do {
-            let data = try response.responseData()
-            // do what you must with `data` as Data and `response.response` as HTTPURLResponse
-        }
-        catch let error {
-            // the request failed because of `error`
-        }
-    }
+	await perform(request: req)
+	do {
+		let data = try response.responseData()
+		// do what you must with `data` as Data and `response.response` as HTTPURLResponse
+	}
+	catch let error {
+		// the request failed because of `error`
+	}
 */
-open class OAuth2Response {
+open class OAuth2Response: @unchecked Sendable {
 	
 	/// The data that was returned.
 	open var data: Data?

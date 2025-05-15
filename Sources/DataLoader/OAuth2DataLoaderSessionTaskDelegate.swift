@@ -28,7 +28,8 @@ import Base
 Simple implementation of a session task delegate, which looks at HTTP redirecting, approving redirects in the same domain and re-signing the
 redirected request.
 */
-open class OAuth2DataLoaderSessionTaskDelegate: NSObject, URLSessionTaskDelegate {
+@OAuth2Actor
+final class OAuth2DataLoaderSessionTaskDelegate: NSObject, URLSessionTaskDelegate {
 	
 	/// The loader to which the delegate belongs, needed for request signing.
 	public internal(set) weak var loader: OAuth2DataLoader?
@@ -50,7 +51,7 @@ open class OAuth2DataLoaderSessionTaskDelegate: NSObject, URLSessionTaskDelegate
 	
 	// MARK: - URLSessionTaskDelegate
 	
-	open func urlSession(_ session: URLSession, task: URLSessionTask, willPerformHTTPRedirection response: HTTPURLResponse, newRequest request: URLRequest, completionHandler: @escaping (URLRequest?) -> Void) {
+	func urlSession(_ session: URLSession, task: URLSessionTask, willPerformHTTPRedirection response: HTTPURLResponse, newRequest request: URLRequest, completionHandler: @escaping (URLRequest?) -> Void) {
 		guard request.url?.host == host else {
 			loader?.logger?.warn("OAuth2", msg: "Redirected to «\(request.url?.host ?? "nil")» but only approving HTTP redirection on «\(host)», not following redirect: \(request)")
 			completionHandler(nil)

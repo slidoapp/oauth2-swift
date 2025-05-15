@@ -47,7 +47,7 @@ public class OAuth2CustomAuthorizer: OAuth2CustomAuthorizerUI {
 	- parameter fromContext:     The controller to which present the login controller. Should be a `NSViewController`
 	- parameter animated:        Whether the presentation should be animated.
 	*/
-	public func present(loginController: AnyObject, fromContext context: AnyObject?, animated: Bool) throws {
+	public func present(loginController: AnyObject, fromContext context: AnyObject?, animated: Bool) async throws {
 		guard #available(macOS 10.10, *) else {
 			throw OAuth2Error.generic("Native authorizing is only available in OS X 10.10 and later")
 		}
@@ -59,7 +59,7 @@ public class OAuth2CustomAuthorizer: OAuth2CustomAuthorizerUI {
 													 expectedType: String(describing: NSViewController.self))
 		}
 		
-		parentController.presentAsSheet(controller)
+		await parentController.presentAsSheet(controller)
 		presentedController = controller
 	}
 	
@@ -73,7 +73,11 @@ public class OAuth2CustomAuthorizer: OAuth2CustomAuthorizerUI {
 	public func dismissLoginController(animated: Bool) {
 		// Not throwing an error here should not be a problem because it would have been thrown when presenting the controller
 		if #available(macOS 10.10, *) {
-			presentedController?.dismiss(nil)
+			if let pc = presentedController {
+				Task { @MainActor in
+					pc.dismiss(nil)
+				}
+			}
 		}
 		presentedController = nil
 	}

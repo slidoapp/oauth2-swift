@@ -22,6 +22,7 @@
 /**
 Platform-dependent login presenters that present custom login views must adopt this protocol.
 */
+@OAuth2Actor
 public protocol OAuth2CustomAuthorizerUI {
 	
 	/**
@@ -31,7 +32,7 @@ public protocol OAuth2CustomAuthorizerUI {
 	- parameter fromContext:     The presenting context, typically another controller of platform-dependent type
 	- parameter animated:        Whether the presentation should be animated
 	*/
-	func present(loginController: AnyObject, fromContext context: AnyObject?, animated: Bool) throws
+	func present(loginController: AnyObject, fromContext context: AnyObject?, animated: Bool) async throws
 	
 	/**
 	This function must dismiss the login controller.

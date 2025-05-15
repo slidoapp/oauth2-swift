@@ -24,7 +24,7 @@ import PackageDescription
 let package = Package(
 	name: "OAuth2",
 	platforms: [
-		.macOS(.v10_15), .iOS(.v12), .tvOS(.v12), .watchOS(.v5)
+		.macOS(.v10_15), .iOS(.v13), .tvOS(.v13), .watchOS(.v6)
 	],
 	products: [
 		.library(name: "OAuth2", targets: ["OAuth2"]),
@@ -43,8 +43,9 @@ let package = Package(
 		.target(name: "Flows", dependencies: [
 			.target(name: "macOS"), .target(name: "iOS"), .target(name: "tvOS"), .target(name: "Constants")]),
 		.target(name: "DataLoader", dependencies: [.target(name: "Flows")]),
-		.testTarget(name: "BaseTests", dependencies: [.target(name: "Base"), .target(name: "Flows")]),
-		.testTarget(name: "FlowTests", dependencies: [.target(name: "Flows")]),
+		.target(name: "TestUtils", dependencies: [.target(name: "Base")]),
+		.testTarget(name: "BaseTests", dependencies: [.target(name: "TestUtils"), .target(name: "Base"), .target(name: "Flows")]),
+		.testTarget(name: "FlowTests", dependencies: [.target(name: "TestUtils"), .target(name: "Flows")]),
 //		.testTarget(name: "DataLoaderTests", dependencies: [.target(name: "DataLoader")]),
 	]
 )

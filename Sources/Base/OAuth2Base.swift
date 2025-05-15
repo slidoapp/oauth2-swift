@@ -21,7 +21,6 @@
 import Foundation
 import CommonCrypto
 
-
 /**
 Class extending on OAuth2Requestable, exposing configuration and maintaining context, serving as base class for `OAuth2`.
 */
@@ -98,7 +97,7 @@ open class OAuth2Base: OAuth2Securable {
 	
 	/// The receiver's id token.
 	open var idToken: String? {
-		get { return clientConfig.idToken }	
+		get { return clientConfig.idToken }
 		set { clientConfig.idToken = newValue }
 	}
 
@@ -132,14 +131,8 @@ open class OAuth2Base: OAuth2Securable {
 		set { clientConfig.customUserAgent = newValue }
 	}
 	
-	
-	/// This closure is internally used with `authorize(params:callback:)` and only exposed for subclassing reason, do not mess with it!
-	public final var didAuthorizeOrFail: ((_ parameters: OAuth2JSON?, _ error: OAuth2Error?) -> Void)?
-	
 	/// Returns true if the receiver is currently authorizing.
-	public final var isAuthorizing: Bool {
-		return nil != didAuthorizeOrFail
-	}
+	public final var isAuthorizing: Bool = false
 	
 	/// Returns true if the receiver is currently exchanging the refresh token.
 	public final var isExchangingRefreshToken: Bool = false
@@ -159,6 +152,7 @@ open class OAuth2Base: OAuth2Securable {
 	*/
 	public final var internalAfterAuthorizeOrFail: ((_ wasFailure: Bool, _ error: OAuth2Error?) -> Void)?
 	
+	public final var doAuthorizeContinuation: CheckedContinuation<OAuth2JSON, any Error>?
 	
 	/**
 	Designated initializer.
@@ -268,7 +262,8 @@ open class OAuth2Base: OAuth2Securable {
 	
 	- parameter redirect: The redirect URL returned by the server that you want to handle
 	*/
-	open func handleRedirectURL(_ redirect: URL) throws {
+	@discardableResult
+	open func handleRedirectURL(_ redirect: URL) async throws -> OAuth2JSON {
 		throw OAuth2Error.generic("Abstract class use")
 	}
 	
@@ -285,11 +280,14 @@ open class OAuth2Base: OAuth2Securable {
 			storeTokensToKeychain()
 		}
 		callOnMainThread() {
-			self.didAuthorizeOrFail?(parameters, nil)
-			self.didAuthorizeOrFail = nil
+			self.isAuthorizing = false
 			self.internalAfterAuthorizeOrFail?(false, nil)
 			self.afterAuthorizeOrFail?(parameters, nil)
 		}
+		
+		// Finish `doAuthorize` call
+		self.doAuthorizeContinuation?.resume(returning: parameters)
+		self.doAuthorizeContinuation = nil
 	}
 	
 	/**
@@ -309,11 +307,14 @@ open class OAuth2Base: OAuth2Securable {
 			finalError = OAuth2Error.requestCancelled
 		}
 		callOnMainThread() {
-			self.didAuthorizeOrFail?(nil, finalError)
-			self.didAuthorizeOrFail = nil
+			self.isAuthorizing = false
 			self.internalAfterAuthorizeOrFail?(true, finalError)
 			self.afterAuthorizeOrFail?(nil, finalError)
 		}
+		
+		// Finish `doAuthorize` call
+		self.doAuthorizeContinuation?.resume(throwing: error ?? OAuth2Error.requestCancelled)
+		self.doAuthorizeContinuation = nil
 	}
 	
 	/**

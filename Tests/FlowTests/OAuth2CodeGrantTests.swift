@@ -25,12 +25,14 @@ import XCTest
 import Base
 @testable
 import Flows
+import TestUtils
 #else
 @testable
 import OAuth2
 #endif
 
 
+@OAuth2Actor
 class OAuth2CodeGrantTests: XCTestCase {
 	
 	lazy var baseSettings: OAuth2JSON = [
@@ -375,7 +377,7 @@ class OAuth2CodeGrantTests: XCTestCase {
 		XCTAssertEqual(comp.host!, "auth.ful.io", "Correct host")
 	}
 	
-	func testTokenResponse() {
+	func testTokenResponse() async throws {
 		let settings = [
 			"client_id": "abc",
 			"client_secret": "xyz",
@@ -399,15 +401,6 @@ class OAuth2CodeGrantTests: XCTestCase {
 		}
 		catch let error {
 			XCTAssertNil(error, "Should not throw wrong error")
-		}
-		
-		// LinkedIn on the other hand must not throw
-		let linkedin = OAuth2CodeGrantLinkedIn(settings: settings)
-		do {
-			_ = try linkedin.parseAccessTokenResponse(params: response)
-		}
-		catch let error {
-			XCTAssertNil(error, "Should not throw")
 		}
 		
 		// Nor the generic no-token-type class
@@ -479,21 +472,16 @@ class OAuth2CodeGrantTests: XCTestCase {
 		performer.responseJSON = response
 		performer.responseStatus = 403
 		oauth.context.redirectURL = "https://localhost"
-		oauth.didAuthorizeOrFail = { json, error in
-			XCTAssertNil(json)
-			XCTAssertNotNil(error)
-			XCTAssertEqual(OAuth2Error.forbidden, error)
+
+		await XCTAssertThrowsErrorAsync(try await oauth.exchangeCodeForToken("MNOP")) { error in
+			XCTAssertEqual(OAuth2Error.forbidden, error.asOAuth2Error)
 		}
-		oauth.exchangeCodeForToken("MNOP")
 		
 		// test round trip - should succeed because of good HTTP status
 		performer.responseStatus = 301
-		oauth.didAuthorizeOrFail = { json, error in
-			XCTAssertNotNil(json)
-			XCTAssertNil(error)
-			XCTAssertEqual("tGzv3JOkF0XG5Qx2TlKWIA", json?["refresh_token"] as? String)
-		}
-		oauth.exchangeCodeForToken("MNOP")
+
+		let json = try await oauth.exchangeCodeForToken("MNOP")
+		XCTAssertEqual("tGzv3JOkF0XG5Qx2TlKWIA", json["refresh_token"] as? String)
 	}
 }
 
@@ -504,19 +492,13 @@ class OAuth2MockPerformer: OAuth2RequestPerformer {
 	
 	var responseStatus = 200
 	
-	func perform(request: URLRequest, completionHandler callback: @escaping (Data?, URLResponse?, Error?) -> Void) -> URLSessionTask? {
+	func perform(request: URLRequest) async throws -> (Data?, URLResponse) {
 		let http = HTTPURLResponse(url: request.url!, statusCode: responseStatus, httpVersion: nil, headerFields: nil)!
-		do {
-			guard let json = responseJSON else {
-				throw OAuth2Error.noDataInResponse
-			}
-			let data = try JSONSerialization.data(withJSONObject: json, options: [])
-			callback(data, http, nil)
+		guard let json = responseJSON else {
+			throw OAuth2Error.noDataInResponse
 		}
-		catch let error {
-			callback(nil, http, error)
-		}
-		return nil
+		let data = try JSONSerialization.data(withJSONObject: json, options: [])
+		return (data, http)
 	}
 }
 
