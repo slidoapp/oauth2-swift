@@ -11,7 +11,7 @@ OAuth2 frameworks for **macOS**, **iOS** and **tvOS** written in Swift 5.
 - [🖥 Sample macOS app][sample] (with data loader examples)
 - [📖 Technical Documentation](https://p2.github.io/OAuth2)
 
-OAuth2 requires Xcode 12.4, the built framework can be used on **OS X 10.15** or **iOS 12** and later.
+OAuth2 requires Xcode 12.4, the built framework can be used on **OS X 10.15**, **iOS 13**, **tvOS 13**, **watchOS 6** and later.
 Happy to accept pull requests, please see [CONTRIBUTING.md](./Docs/CONTRIBUTING.md)
 
 ### Swift Version
@@ -374,7 +374,6 @@ let oauth2 = OAuth2CodeGrant(settings: [
 - [Facebook](https://github.com/p2/OAuth2/wiki/Facebook)
 - [Reddit](https://github.com/p2/OAuth2/wiki/Reddit)
 - [Google](https://github.com/p2/OAuth2/wiki/Google)
-- [LinkedIn](https://github.com/p2/OAuth2/wiki/LinkedIn)
 - [Instagram, Bitly, Pinterest, ...](https://github.com/p2/OAuth2/wiki/Instagram,-Bitly,-Pinterest-and-others)
 - [Uber](https://github.com/p2/OAuth2/wiki/Uber)
 - [BitBucket](https://github.com/p2/OAuth2/wiki/BitBucket)

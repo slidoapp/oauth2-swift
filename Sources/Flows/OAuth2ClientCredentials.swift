@@ -34,14 +34,14 @@ open class OAuth2ClientCredentials: OAuth2 {
 		return OAuth2GrantTypes.clientCredentials
 	}
 	
-	override open func doAuthorize(params inParams: OAuth2StringDict? = nil) {
-		self.obtainAccessToken(params: inParams) { params, error in
-			if let error = error {
-				self.didFail(with: error.asOAuth2Error)
-			}
-			else {
-				self.didAuthorize(withParameters: params ?? OAuth2JSON())
-			}
+	override open func doAuthorize(params inParams: OAuth2StringDict? = nil) async throws -> OAuth2JSON? {
+		do {
+			let result = try await self.obtainAccessToken()
+			self.didAuthorize(withParameters: result)
+			return result
+		} catch {
+			self.didFail(with: error.asOAuth2Error)
+			return nil
 		}
 	}
 	
@@ -71,27 +71,21 @@ open class OAuth2ClientCredentials: OAuth2 {
 	
 	Uses `accessTokenRequest(params:)` to create the request, which you can subclass to change implementation specifics.
 	
-	- parameter callback: The callback to call after the process has finished
+	- returns: OAuth2 JSON dictionary
 	*/
-	public func obtainAccessToken(params: OAuth2StringDict? = nil, callback: @escaping ((_ params: OAuth2JSON?, _ error: OAuth2Error?) -> Void)) {
+	public func obtainAccessToken(params: OAuth2StringDict? = nil) async throws -> OAuth2JSON {
 		do {
 			let post = try accessTokenRequest(params: params).asURLRequest(for: self)
 			logger?.debug("OAuth2", msg: "Requesting new access token from \(post.url?.description ?? "nil")")
 			
-			perform(request: post) { response in
-				do {
-					let data = try response.responseData()
-					let params = try self.parseAccessTokenResponse(data: data)
-					self.logger?.debug("OAuth2", msg: "Did get access token [\(nil != self.clientConfig.accessToken)]")
-					callback(params, nil)
-				}
-				catch let error {
-					callback(nil, error.asOAuth2Error)
-				}
-			}
+			let response = await perform(request: post)
+			let data = try response.responseData()
+			let params = try self.parseAccessTokenResponse(data: data)
+			self.logger?.debug("OAuth2", msg: "Did get access token [\(nil != self.clientConfig.accessToken)]")
+			return params
 		}
-		catch let error {
-			callback(nil, error.asOAuth2Error)
+		catch {
+			 throw error.asOAuth2Error
 		}
 	}
 }

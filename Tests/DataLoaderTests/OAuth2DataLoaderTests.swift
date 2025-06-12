@@ -33,6 +33,7 @@ import XCTest
 #endif
 
 
+@OAuth2Actor
 class OAuth2DataLoaderTests: XCTestCase {
 	
 	var oauth2: OAuth2PasswordGrant?
@@ -43,8 +44,7 @@ class OAuth2DataLoaderTests: XCTestCase {
 	
 	var dataPerformer: OAuth2AnyBearerPerformer?
 	
-	override func setUp() {
-		super.setUp()
+	override func setUp() async throws {
 		authPerformer = OAuth2MockPerformer()
 		authPerformer!.responseJSON = ["access_token": "toktok", "token_type": "bearer"]
 		oauth2 = OAuth2PasswordGrant(settings: ["client_id": "abc", "authorize_url": "https://oauth.io/authorize", "keychain": false] as OAuth2JSON)
@@ -55,8 +55,7 @@ class OAuth2DataLoaderTests: XCTestCase {
 		oauth2!.requestPerformer = authPerformer
 		
 		dataPerformer = OAuth2AnyBearerPerformer()
-		loader = OAuth2DataLoader(oauth2: oauth2!)
-		loader!.requestPerformer = dataPerformer
+		loader = OAuth2DataLoader(oauth2: oauth2!, requestPerformer: dataPerformer)
 	}
 	
 	func testAutoEnqueue() {
@@ -97,18 +96,17 @@ class OAuth2DataLoaderTests: XCTestCase {
 
 class OAuth2AnyBearerPerformer: OAuth2RequestPerformer {
 	
-	func perform(request: URLRequest, completionHandler callback: @escaping (Data?, URLResponse?, Error?) -> Void) -> URLSessionTask? {
+	func perform(request: URLRequest) async throws -> (Data?, URLResponse) {
 		let authorized = (nil != request.value(forHTTPHeaderField: "Authorization"))
 		let status = authorized ? 201 : 401
 		let http = HTTPURLResponse(url: request.url!, statusCode: status, httpVersion: nil, headerFields: nil)!
 		if authorized {
 			let data = try? JSONSerialization.data(withJSONObject: ["data": ["in": "response"]], options: [])
-			callback(data, http, nil)
+			return (data, http)
 		}
 		else {
-			callback(nil, http, nil)
+			return (nil, http)
 		}
-		return nil
 	}
 }
 

@@ -31,6 +31,7 @@ import OAuth2
 #endif
 
 
+@OAuth2Actor
 class OAuth2Tests: XCTestCase {
 	
 	func genericOAuth2() -> OAuth2 {
@@ -117,15 +118,18 @@ class OAuth2Tests: XCTestCase {
 		XCTAssertNil(params["state"], "Expecting no `state` in query")
 	}
 	
-	func testAuthorizeCall() {
+	func testAuthorizeCall() async {
 		let oa = genericOAuth2()
 		oa.verbose = false
 		XCTAssertFalse(oa.authConfig.authorizeEmbedded)
-		oa.authorize() { params, error in
+		
+		do {
+			let params = try await oa.authorize()
 			XCTAssertNil(params, "Should not have auth parameters")
-			XCTAssertNotNil(error)
-			XCTAssertEqual(error, OAuth2Error.noRedirectURL)
+		} catch {
+			XCTAssertEqual(error.asOAuth2Error, OAuth2Error.noRedirectURL)
 		}
+		
 		XCTAssertFalse(oa.authConfig.authorizeEmbedded)
 		
 		// embedded

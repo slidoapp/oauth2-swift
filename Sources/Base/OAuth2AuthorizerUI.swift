@@ -24,6 +24,7 @@ import Foundation
 /**
 Platform-dependent authorizers must adopt this protocol.
 */
+@OAuth2Actor
 public protocol OAuth2AuthorizerUI {
 	
 	/// The OAuth2 instance this authorizer belongs to.
@@ -44,5 +45,5 @@ public protocol OAuth2AuthorizerUI {
 	- parameter at:   The authorize URL to open
 	- throws:         Can throw OAuth2Error if the method is unable to show the authorize screen
 	*/
-	func authorizeEmbedded(with config: OAuth2AuthConfig, at url: URL) throws
+	func authorizeEmbedded(with config: OAuth2AuthConfig, at url: URL) async throws
 }

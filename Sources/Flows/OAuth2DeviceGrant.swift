@@ -79,28 +79,20 @@ open class OAuth2DeviceGrant: OAuth2 {
 	/**
 	Start the device authorization flow.
 	
-	- parameter params:   Optional key/value pairs to pass during authorize device request
-	- parameter callback: The callback to call after the device authorization response has been received
+	- parameter params: Optional key/value pairs to pass during authorize device request
+	- returns: The device authorization response.
 	*/
-	public func start(useNonTextualTransmission: Bool = false, params: OAuth2StringDict? = nil, completion: @escaping (DeviceAuthorization?, Error?) -> Void) {
-		authorizeDevice(params: params) { result, error in
-			guard let result else {
-				if let error {
-					self.logger?.warn("OAuth2", msg: "Unable to get device code: \(error)")
-				}
-				completion(nil, error)
-				return
-			}
+	public func start(useNonTextualTransmission: Bool = false, params: OAuth2StringDict? = nil) async throws -> DeviceAuthorization {
+		do {
+			let result = try await authorizeDevice(params: params)
 			
 			guard let deviceCode = result["device_code"] as? String,
 				let userCode = result["user_code"] as? String,
 				let verificationUri = result["verification_uri"] as? String,
 				let verificationUrl = URL(string: verificationUri),
-				let expiresIn = result["expires_in"] as? Int else {
-				let error = OAuth2Error.generic("The response doesn't contain all required fields.")
-				self.logger?.warn("OAuth2", msg: String(describing: error))
-				completion(nil, error)
-				return
+				let expiresIn = result["expires_in"] as? Int
+			else {
+				throw OAuth2Error.generic("The response doesn't contain all required fields.")
 			}
 			
 			var verificationUrlComplete: URL?
@@ -109,83 +101,80 @@ open class OAuth2DeviceGrant: OAuth2 {
 			}
 			
 			if useNonTextualTransmission, let url = verificationUrlComplete {
-				do {
-					try self.authorizer.openAuthorizeURLInBrowser(url)
-				} catch let error {
-					completion(nil, error)
-				}
+				try self.authorizer.openAuthorizeURLInBrowser(url)
 			}
 			
 			let pollingInterval = result["interval"] as? TimeInterval ?? 5
-			self.getDeviceAccessToken(deviceCode: deviceCode, interval: pollingInterval) { params, error in
-				if let params {
+			
+			Task {
+				do {
+					let params = try await self.getDeviceAccessToken(deviceCode: deviceCode, interval: pollingInterval)
 					self.didAuthorize(withParameters: params)
-				}
-				else if let error {
+				} catch {
 					self.didFail(with: error.asOAuth2Error)
 				}
 			}
 			
-			let deviceAuthorization = DeviceAuthorization(userCode: userCode, verificationUrl: verificationUrl, verificationUrlComplete: verificationUrlComplete, expiresIn: expiresIn)
-			completion(deviceAuthorization, nil)
+			return DeviceAuthorization(
+				userCode: userCode,
+				verificationUrl: verificationUrl,
+				verificationUrlComplete: verificationUrlComplete,
+				expiresIn: expiresIn
+			)
+			
+		} catch {
+			self.logger?.warn("OAuth2", msg: "Unable to get device code: \(error)") // TODO improve message to cover different scenarios
+			throw error
 		}
 	}
 	
-	private func authorizeDevice(params: OAuth2StringDict?, completion: @escaping (OAuth2JSON?, Error?) -> Void) {
+	private func authorizeDevice(params: OAuth2StringDict?) async throws -> OAuth2JSON {
 		do {
 			let post = try deviceAuthorizationRequest(params: params).asURLRequest(for: self)
 			logger?.debug("OAuth2", msg: "Obtaining device code from \(post.url!)")
 			
-			perform(request: post) { response in
-				do {
-					let data = try response.responseData()
-					let params = try self.parseDeviceAuthorizationResponse(data: data)
-					completion(params, nil)
-				}
-				catch let error {
-					completion(nil, error.asOAuth2Error)
-				}
-			}
+			let response = await self.perform(request: post)
+			let data = try response.responseData()
+			return try self.parseDeviceAuthorizationResponse(data: data)
+			
 		}
 		catch let error {
-			completion(nil, error.asOAuth2Error)
+			throw error.asOAuth2Error
 		}
 	}
 	
-	private func getDeviceAccessToken(deviceCode: String, interval: TimeInterval, completion: @escaping (OAuth2JSON?, Error?) -> Void) {
+	private func getDeviceAccessToken(deviceCode: String, interval: TimeInterval) async throws -> OAuth2JSON {
 		do {
 			let post = try deviceAccessTokenRequest(with: deviceCode).asURLRequest(for: self)
 			logger?.debug("OAuth2", msg: "Obtaining access token for device with code \(deviceCode) from \(post.url!)")
 			
-			perform(request: post) { response in
-				do {
-					let data = try response.responseData()
-					let params = try self.parseAccessTokenResponse(data: data)
-					completion(params, nil)
-				}
-				catch let error {
-					let oaerror = error.asOAuth2Error
-					
-					if oaerror == .authorizationPending(nil) {
-						self.logger?.debug("OAuth2", msg: "AuthorizationPending, repeating in \(interval) seconds.")
-						DispatchQueue.main.asyncAfter(deadline: .now() + interval) {
-							self.getDeviceAccessToken(deviceCode: deviceCode, interval: interval, completion: completion)
-						}
-					} else if oaerror == .slowDown(nil) {
-						let updatedInterval = interval + 5 // The 5 seconds increase is required by the RFC8628 standard (https://www.rfc-editor.org/rfc/rfc8628#section-3.5)
-						self.logger?.debug("OAuth2", msg: "SlowDown, repeating in \(updatedInterval) seconds.")
-						DispatchQueue.main.asyncAfter(deadline: .now() + updatedInterval) {
-							self.getDeviceAccessToken(deviceCode: deviceCode, interval: updatedInterval, completion: completion)
-						}
-					} else {
-						completion(nil, oaerror)
-					}
-				}
+			let response = await self.perform(request: post)
+			let data = try response.responseData()
+			return try self.parseAccessTokenResponse(data: data)
+		}
+		catch {
+			let oaerror = error.asOAuth2Error
+			
+			if oaerror == .authorizationPending(nil) {
+				self.logger?.debug("OAuth2", msg: "AuthorizationPending, repeating in \(interval) seconds.")
+				try await Task.sleep(seconds: interval)
+				return try await self.getDeviceAccessToken(deviceCode: deviceCode, interval: interval)
+			} else if oaerror == .slowDown(nil) {
+				let updatedInterval = interval + 5 // The 5 seconds increase is required by the RFC8628 standard (https://www.rfc-editor.org/rfc/rfc8628#section-3.5)
+				self.logger?.debug("OAuth2", msg: "SlowDown, repeating in \(updatedInterval) seconds.")
+				try await Task.sleep(seconds: updatedInterval)
+				return try await self.getDeviceAccessToken(deviceCode: deviceCode, interval: updatedInterval)
 			}
+			
+			throw error.asOAuth2Error
 		}
-		catch let error {
-			completion(nil, error.asOAuth2Error)
-		}
+	}
+}
+
+fileprivate extension Task where Success == Never, Failure == Never {
+	static func sleep(seconds: Double) async throws {
+		let duration = UInt64(seconds * 1_000_000_000)
+		try await Task.sleep(nanoseconds: duration)
 	}
 }
 

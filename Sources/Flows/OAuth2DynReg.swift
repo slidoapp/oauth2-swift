@@ -32,6 +32,7 @@ Hence it's highly portable and can be instantiated when needed with ease.
 
 For the full OAuth2 Dynamic Client Registration spec see https://tools.ietf.org/html/rfc7591
 */
+@OAuth2Actor
 open class OAuth2DynReg {
 	
 	/// Additional HTTP headers to supply during registration.
@@ -51,32 +52,25 @@ open class OAuth2DynReg {
 	Register the given client.
 	
 	- parameter client: The client to register and update with client credentials, when successful
-	- parameter callback: The callback to call when done with the registration response (JSON) and/or an error
+	- returns: JSON response
 	*/
-	open func register(client: OAuth2, callback: @escaping ((_ json: OAuth2JSON?, _ error: OAuth2Error?) -> Void)) {
+	open func register(client: OAuth2) async throws -> OAuth2JSON {
 		do {
 			let req = try registrationRequest(for: client)
 			client.logger?.debug("OAuth2", msg: "Registering client at \(req.url!) with scopes “\(client.scope ?? "(none)")”")
-			client.perform(request: req) { response in
-				do {
-					let data = try response.responseData()
-					let dict = try self.parseRegistrationResponse(data: data, client: client)
-					try client.assureNoErrorInResponse(dict)
-					if response.response.statusCode >= 400 {
-						client.logger?.warn("OAuth2", msg: "Registration failed with \(response.response.statusCode)")
-					}
-					else {
-						self.didRegisterWith(json: dict, client: client)
-					}
-					callback(dict, nil)
-				}
-				catch let error {
-					callback(nil, error.asOAuth2Error)
-				}
+			
+			let response = await client.perform(request: req)
+			let data = try response.responseData()
+			let dict = try self.parseRegistrationResponse(data: data, client: client)
+			try client.assureNoErrorInResponse(dict)
+			if response.response.statusCode >= 400 {
+				client.logger?.warn("OAuth2", msg: "Registration failed with \(response.response.statusCode)")
+			} else {
+				self.didRegisterWith(json: dict, client: client)
 			}
-		}
-		catch let error {
-			callback(nil, error.asOAuth2Error)
+			return dict
+		} catch {
+			throw error.asOAuth2Error
 		}
 	}
 	
