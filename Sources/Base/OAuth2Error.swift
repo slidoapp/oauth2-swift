@@ -178,6 +178,9 @@ public enum OAuth2Error: Error, CustomStringConvertible, Equatable {
 	/// The "device_code" has expired. Passes the underlying error_description.
 	case expiredToken(String?)
 	
+	/// The requested resource is invalid, missing, unknown, or malformed.
+	case invalidTarget(String?)
+	
 	/// Other response error, as defined in its String.
 	case responseError(String)
 	
@@ -214,6 +217,8 @@ public enum OAuth2Error: Error, CustomStringConvertible, Equatable {
 			return .slowDown(description)
 		case "expired_token":
 			return .expiredToken(description)
+		case "invalid_target":
+			return .invalidTarget(description)
 		default:
 			return .responseError(description ?? fallback ?? "Authorization error: \(code)")
 		}
@@ -318,6 +323,8 @@ public enum OAuth2Error: Error, CustomStringConvertible, Equatable {
 			return message ?? "The authorization request is still pending and polling should continue, but the interval must be increased by 5 seconds for this and all subsequent requests."
 		case .expiredToken(let message):
 			return message ?? "The \"device_code\" has expired, and the device authorization session has concluded."
+		case .invalidTarget(let message):
+			return message ?? "The requested resource is invalid, missing, unknown, or malformed."
 		case .responseError(let message):
 			return message
 		}
@@ -374,6 +381,7 @@ public enum OAuth2Error: Error, CustomStringConvertible, Equatable {
 		case (.authorizationPending, .authorizationPending):         return true
 		case (.slowDown, .slowDown):                                 return true
 		case (.expiredToken, .expiredToken):                         return true
+		case (.invalidTarget, .invalidTarget):                       return true
 		case (.responseError(let lhm), .responseError(let rhm)):     return lhm == rhm
 		default:                                                     return false
 		}
