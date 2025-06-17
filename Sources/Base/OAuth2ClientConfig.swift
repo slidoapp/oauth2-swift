@@ -38,8 +38,9 @@ open class OAuth2ClientConfig {
 	/// Where a logo/icon for the app can be found.
 	public final var logoURL: URL?
 
-	/// The URL used for constructing target for resource-aware tokens.
-	public final var resourceURL: URL?
+	/// The URLs of the target services or resources used for constructing resource-aware tokens.
+	/// See: https://datatracker.ietf.org/doc/html/rfc8707
+	public final var resourceURLs: [URL]?
 
 	/// The scope currently in use.
 	open var scope: String?
@@ -136,8 +137,8 @@ open class OAuth2ClientConfig {
 		if let logo = settings["logo_uri"] as? String {
 			logoURL = URL(string: logo)
 		}
-		if let resource = settings["resource_uri"] as? String {
-			resourceURL = URL(string: resource)
+		if let resources = settings["resource_uris"] as? [String] {
+			resourceURLs = resources.compactMap { URL(string: $0) }
 		}
 		
 		// client authorization options
