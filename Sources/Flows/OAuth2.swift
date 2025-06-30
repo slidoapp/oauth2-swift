@@ -326,8 +326,8 @@ open class OAuth2: OAuth2Base {
 		if let clientId = clientId {
 			req.params["client_id"] = clientId
 		}
-		if let resourceURLs = clientConfig.resourceURLs {
-			req.params.setMultiple(key: "resource", values: resourceURLs.map(\.absoluteString))
+		if let resourceURIs = clientConfig.resourceURIs {
+			req.params.setMultiple(key: "resource", values: resourceURIs)
 		}
 		req.add(params: params)
 		
@@ -459,13 +459,13 @@ open class OAuth2: OAuth2Base {
 		guard let accessToken = clientConfig.accessToken, !accessToken.isEmpty else {
 			throw OAuth2Error.noAccessToken
 		}
-		guard let resourceURLs = clientConfig.resourceURLs, !resourceURLs.isEmpty else {
-			throw OAuth2Error.noResourceURL
+		guard let resourceURIs = clientConfig.resourceURIs, !resourceURIs.isEmpty else {
+			throw OAuth2Error.noResourceURI
 		}
 
 		let req = OAuth2AuthRequest(url: (clientConfig.tokenURL ?? clientConfig.authorizeURL))
 		req.params["grant_type"] = OAuth2GrantTypes.tokenExchange
-		req.params.setMultiple(key: "resource", values: resourceURLs.map(\.absoluteString))
+		req.params.setMultiple(key: "resource", values: resourceURIs)
 		req.params["scope"] = clientConfig.scope
 		req.params["requested_token_type"] = OAuth2TokenTypeIdentifiers.accessToken
 		req.params["subject_token"] = accessToken
@@ -484,12 +484,12 @@ open class OAuth2: OAuth2Base {
 	*/
 	open func doExchangeAccessTokenForResource(params: OAuth2StringDict? = nil) async throws -> String {
 		do {
-			guard let resourceURLs = clientConfig.resourceURLs, !resourceURLs.isEmpty else {
-				throw OAuth2Error.noResourceURL
+			guard let resourceURIs = clientConfig.resourceURIs, !resourceURIs.isEmpty else {
+				throw OAuth2Error.noResourceURI
 			}
 			
 			let post = try tokenRequestForExchangeAccessTokenForResource(params: params).asURLRequest(for: self)
-			logger?.debug("OAuth2", msg: "Exchanging access token for resource(s) \(resourceURLs) from \(post.url?.description ?? "nil")")
+			logger?.debug("OAuth2", msg: "Exchanging access token for resource(s) \(resourceURIs) from \(post.url?.description ?? "nil")")
 
 			let response = await perform(request: post)
 			let data = try response.responseData()

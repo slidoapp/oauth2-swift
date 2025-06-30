@@ -269,9 +269,9 @@ public struct OAuth2RequestParams {
 		return params?[key]?.split(separator: "\n").map(String.init) ?? []
 	}
 	
-	public mutating func setMultiple(key: String, values: [String]) {
+	public mutating func setMultiple(key: String, values: any Sequence<String>) {
 		params = params ?? OAuth2StringDict()
-		params![key] = values.joined(separator: "\n")
+		params![key] = values.sorted().joined(separator: "\n")
 	}
 	
 	/**
