@@ -25,6 +25,8 @@ import XCTest
 import Base
 @testable
 import Flows
+@testable
+import TestUtils
 #else
 @testable
 import OAuth2

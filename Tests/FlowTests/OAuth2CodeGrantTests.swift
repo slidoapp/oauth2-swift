@@ -25,6 +25,7 @@ import XCTest
 import Base
 @testable
 import Flows
+@testable
 import TestUtils
 #else
 @testable
@@ -383,14 +384,14 @@ class OAuth2CodeGrantTests: XCTestCase {
 			"client_secret": "xyz",
 			"authorize_uri": "https://auth.ful.io",
 			"keychain": false,
-		] as [String: Any]
+		] as [String: any Sendable]
 		let oauth = OAuth2CodeGrant(settings: settings)
-		var response = [
+		var response: OAuth2JSON = [
 			"access_token": "2YotnFZFEjr1zCsicMWpAA",
 			"expires_in": 3600,
 			"refresh_token": "tGzv3JOkF0XG5Qx2TlKWIA",
 			"foo": "bar & hat"
-		] as [String: Any]
+		]
 		
 		// must throw when "token_type" is missing
 		do {
@@ -446,13 +447,13 @@ class OAuth2CodeGrantTests: XCTestCase {
 		}
 		
 		// unsupported bearer type
-		let response2 = [
+		let response2: OAuth2JSON = [
 			"access_token": "2YotnFZFEjr1zCsicMWpAA",
 			"token_type": "not_my_type",
 			"expires_in": 3600,
 			"refresh_token": "tGzv3JOkF0XG5Qx2TlKWIA",
 			"foo": "bar & hat"
-		] as [String : Any]
+		]
 		
 		do {
 			_ = try oauth.parseAccessTokenResponse(params: response2)
@@ -465,12 +466,9 @@ class OAuth2CodeGrantTests: XCTestCase {
 			XCTAssertTrue(false, "Should not throw wrong error")
 		}
 		
-		let performer = OAuth2MockPerformer()
-		oauth.requestPerformer = performer
+		oauth.requestPerformer = OAuth2MockPerformer(.init(json: response, statusCode: 403))
 		
 		// test round trip - should fail because of 403
-		performer.responseJSON = response
-		performer.responseStatus = 403
 		oauth.context.redirectURL = "https://localhost"
 
 		await XCTAssertThrowsErrorAsync(try await oauth.exchangeCodeForToken("MNOP")) { error in
@@ -478,27 +476,9 @@ class OAuth2CodeGrantTests: XCTestCase {
 		}
 		
 		// test round trip - should succeed because of good HTTP status
-		performer.responseStatus = 301
+		oauth.requestPerformer = OAuth2MockPerformer(.init(json: response, statusCode: 301))
 
 		let json = try await oauth.exchangeCodeForToken("MNOP")
 		XCTAssertEqual("tGzv3JOkF0XG5Qx2TlKWIA", json["refresh_token"] as? String)
 	}
 }
-
-
-class OAuth2MockPerformer: OAuth2RequestPerformer {
-	
-	var responseJSON: OAuth2JSON?
-	
-	var responseStatus = 200
-	
-	func perform(request: URLRequest) async throws -> (Data?, URLResponse) {
-		let http = HTTPURLResponse(url: request.url!, statusCode: responseStatus, httpVersion: nil, headerFields: nil)!
-		guard let json = responseJSON else {
-			throw OAuth2Error.noDataInResponse
-		}
-		let data = try JSONSerialization.data(withJSONObject: json, options: [])
-		return (data, http)
-	}
-}
-

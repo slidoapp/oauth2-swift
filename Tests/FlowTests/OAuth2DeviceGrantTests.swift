@@ -25,6 +25,8 @@ import XCTest
 import Base
 @testable
 import Flows
+@testable
+import TestUtils
 #else
 @testable
 import OAuth2
@@ -157,8 +159,7 @@ class OAuth2DeviceGrantTests: XCTestCase {
 			XCTAssertTrue(false, "Should not throw wrong error")
 		}
 		
-		let performer = OAuth2MockPerformer()
-		oauth.requestPerformer = performer
+		oauth.requestPerformer = OAuth2MockPerformer()
 		
 		// authorization_pending response
 		let responseAuthorizationPending = [
