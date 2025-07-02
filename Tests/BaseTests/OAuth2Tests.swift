@@ -189,6 +189,9 @@ class OAuth2Tests: XCTestCase {
 	}
 	
 	func testSessionConfiguration() {
+		final class SessDelegate: NSObject, URLSessionDelegate {
+		}
+		
 		let oauth = OAuth2(settings: [:])
 		XCTAssertEqual(0, oauth.session.configuration.httpCookieStorage?.cookies?.count ?? 0, "Expecting ephemeral session configuration by default")
 		
@@ -203,7 +206,30 @@ class OAuth2Tests: XCTestCase {
 		XCTAssertEqual(5, oauth.session.configuration.timeoutIntervalForRequest)
 	}
 	
-	class SessDelegate: NSObject, URLSessionDelegate {
+	func testDoExchangeRefreshToken() async throws {
+		let oauth = OAuth2(settings: [:])
+		oauth.clientConfig.refreshToken = "abc"
+		
+		oauth.requestPerformer = OAuth2MockPerformer { reqParams in
+			let audience = reqParams?["audience"] ?? "unknown"
+			
+			return .init(
+				json: [
+					"access_token": "refresh_token_for_\(audience)",
+					"issued_token_type": "urn:ietf:params:oauth:token-type:refresh_token",
+					"refresh_token": "def",
+					"token_type": "Bearer"
+				],
+				delayMs: 100
+			)
+		}
+		
+		let client1RefreshToken = try await oauth.doExchangeRefreshToken(audienceClientId: "client1", traceId: "")
+		let client2RefreshToken = try await oauth.doExchangeRefreshToken(audienceClientId: "client2", traceId: "")
+			
+		XCTAssertEqual("refresh_token_for_client1", client1RefreshToken)
+		XCTAssertEqual("refresh_token_for_client2", client2RefreshToken)
+		XCTAssertEqual("def", oauth.refreshToken)
 	}
 }
 
