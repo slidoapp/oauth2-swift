@@ -20,6 +20,7 @@
 #if os(macOS)
 
 import Cocoa
+
 #if !NO_MODULE_IMPORT
 import Base
 #endif

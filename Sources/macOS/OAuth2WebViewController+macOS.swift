@@ -21,6 +21,7 @@
 
 import Cocoa
 import WebKit
+
 #if !NO_MODULE_IMPORT
 import Base
 #endif

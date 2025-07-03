@@ -23,6 +23,7 @@ import Cocoa
 #if !NO_MODULE_IMPORT
 import Base
 #endif
+
 #if canImport(AuthenticationServices)
 import AuthenticationServices
 #endif
