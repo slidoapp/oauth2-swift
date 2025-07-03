@@ -1,6 +1,15 @@
 {
-  "originHash" : "0c82c9b0cc5a936aab0be4b3aea29b49e944acfcfa25c8b7b5c351fcb30eb19c",
+  "originHash" : "3e7272bf7c98b4cdae60d2d8850e4e38300f88987738046a1365a9dcd95802c5",
   "pins" : [
+    {
+      "identity" : "semaphore",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/groue/Semaphore",
+      "state" : {
+        "revision" : "2543679282aa6f6c8ecf2138acd613ed20790bc2",
+        "version" : "0.1.0"
+      }
+    },
     {
       "identity" : "swiftkeychain",
       "kind" : "remoteSourceControl",
