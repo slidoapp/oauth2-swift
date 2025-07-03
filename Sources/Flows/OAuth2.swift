@@ -19,6 +19,7 @@
 //
 
 import Foundation
+import Semaphore
 
 #if !NO_MODULE_IMPORT
  import Base
@@ -48,6 +49,9 @@ open class OAuth2: OAuth2Base {
 	
 	/// The authorizer to use for UI handling, depending on platform.
 	open var authorizer: OAuth2AuthorizerUI!
+	
+	/// The semaphore preventing concurrent execution of `doExchangeRefreshToken()` function.
+	private let exchangeRefreshTokenSemaphore = AsyncSemaphore(value: 1)
 	
 	
 	/**
@@ -106,9 +110,8 @@ open class OAuth2: OAuth2Base {
 			throw OAuth2Error.alreadyAuthorizing
 		}
 
-		guard !isExchangingRefreshToken else {
-			throw OAuth2Error.alreadyExchangingRefreshToken
-		}
+		/// Wait for all running exchanges to finish
+		await self.exchangeRefreshTokenSemaphore.wait()
 		
 		self.isAuthorizing = true
 		logger?.debug("OAuth2", msg: "Starting authorization")
@@ -404,12 +407,15 @@ open class OAuth2: OAuth2Base {
 	- returns: Exchanged refresh token
 	*/
 	open func doExchangeRefreshToken(audienceClientId: String, traceId: String, params: OAuth2StringDict? = nil) async throws -> String {
-		do {
-			guard !self.isExchangingRefreshToken else {
-				throw OAuth2Error.alreadyExchangingRefreshToken
-			}
-			self.isExchangingRefreshToken = true
+		/// Make sure no two tasks can execute `doExchangeRefreshToken()` concurrently.
+		await exchangeRefreshTokenSemaphore.wait()
+		defer {
+			exchangeRefreshTokenSemaphore.signal()
+		}
+		
+		debugPrint("[doExchangeRefreshToken] Started for \(audienceClientId)")
 
+		do {
 			let post = try tokenRequestForExchangeRefreshToken(audienceClientId: audienceClientId, params: params).asURLRequest(for: self)
 			logger?.debug("OAuth2", msg: "Exchanging refresh token for client with ID \(audienceClientId) from \(post.url?.description ?? "nil") [trace=\(traceId)]")
 
@@ -437,11 +443,10 @@ open class OAuth2: OAuth2Base {
 			if self.useKeychain {
 				self.storeTokensToKeychain()
 			}
-			self.isExchangingRefreshToken = false
+			debugPrint("[doExchangeRefreshToken] Ended for \(audienceClientId)")
 			return exchangedRefreshToken
 		} catch {
 			self.logger?.debug("OAuth2", msg: "Error exchanging refresh in [trace=\(traceId)] token: \(error)")
-			self.isExchangingRefreshToken = false
 			throw error.asOAuth2Error
 		}
 	}

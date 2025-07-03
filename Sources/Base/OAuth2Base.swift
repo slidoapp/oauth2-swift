@@ -134,9 +134,6 @@ open class OAuth2Base: OAuth2Securable {
 	/// Returns true if the receiver is currently authorizing.
 	public final var isAuthorizing: Bool = false
 	
-	/// Returns true if the receiver is currently exchanging the refresh token.
-	public final var isExchangingRefreshToken: Bool = false
-	
 	/**
 	Closure called after the regular authorization callback, on the main thread. You can use this callback when you're performing
 	authorization manually and/or for cleanup operations.
