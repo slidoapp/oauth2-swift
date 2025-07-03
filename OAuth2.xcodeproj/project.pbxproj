@@ -33,6 +33,7 @@
 		871279812DB152B300A5AF72 /* SwiftKeychain in Frameworks */ = {isa = PBXBuildFile; productRef = 871279802DB152B300A5AF72 /* SwiftKeychain */; };
 		871279832DB152BB00A5AF72 /* SwiftKeychain in Frameworks */ = {isa = PBXBuildFile; productRef = 871279822DB152BB00A5AF72 /* SwiftKeychain */; };
 		871279852DB7DD1B00A5AF72 /* OAuth2ExchangeAccessTokenForResourceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 871279842DB7DD1B00A5AF72 /* OAuth2ExchangeAccessTokenForResourceTests.swift */; };
+		8760AE592E15335E00020465 /* OAuth2MockPerformer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8760AE582E15335A00020465 /* OAuth2MockPerformer.swift */; };
 		8793811929D483EC00DC4EBC /* OAuth2DeviceGrant.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8793811829D483EC00DC4EBC /* OAuth2DeviceGrant.swift */; };
 		8793811A29D483EC00DC4EBC /* OAuth2DeviceGrant.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8793811829D483EC00DC4EBC /* OAuth2DeviceGrant.swift */; };
 		8793811B29D483EC00DC4EBC /* OAuth2DeviceGrant.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8793811829D483EC00DC4EBC /* OAuth2DeviceGrant.swift */; };
@@ -189,6 +190,7 @@
 		659854461C5B3BEA00237D39 /* OAuth2.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = OAuth2.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		65EC05DF1C9050CB00DE9186 /* OAuth2KeychainAccount.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = OAuth2KeychainAccount.swift; sourceTree = "<group>"; };
 		871279842DB7DD1B00A5AF72 /* OAuth2ExchangeAccessTokenForResourceTests.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = OAuth2ExchangeAccessTokenForResourceTests.swift; sourceTree = "<group>"; };
+		8760AE582E15335A00020465 /* OAuth2MockPerformer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OAuth2MockPerformer.swift; sourceTree = "<group>"; };
 		8793811829D483EC00DC4EBC /* OAuth2DeviceGrant.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OAuth2DeviceGrant.swift; sourceTree = "<group>"; };
 		879EE6EC2CF61295008B3D74 /* OAuth2GrantTypes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OAuth2GrantTypes.swift; sourceTree = "<group>"; };
 		879EE6ED2CF61295008B3D74 /* OAuth2ResponseTypes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OAuth2ResponseTypes.swift; sourceTree = "<group>"; };
@@ -318,6 +320,7 @@
 		87FABDDB2DC9F18F00E0C67B /* TestUtils */ = {
 			isa = PBXGroup;
 			children = (
+				8760AE582E15335A00020465 /* OAuth2MockPerformer.swift */,
 				87FABDD22DC8D77000E0C67B /* XCTAssertThrowsErrorAsync.swift */,
 			);
 			path = TestUtils;
@@ -836,6 +839,7 @@
 				87FABDD32DC8D77000E0C67B /* XCTAssertThrowsErrorAsync.swift in Sources */,
 				EE4EBD881D7FF38200E6A9CA /* OAuth2AuthRequestTests.swift in Sources */,
 				EE4EBD891D7FF38200E6A9CA /* OAuth2ClientCredentialsTests.swift in Sources */,
+				8760AE592E15335E00020465 /* OAuth2MockPerformer.swift in Sources */,
 				871279852DB7DD1B00A5AF72 /* OAuth2ExchangeAccessTokenForResourceTests.swift in Sources */,
 				EE4EBD8B1D7FF38200E6A9CA /* OAuth2DynRegTests.swift in Sources */,
 				EE4EBD8A1D7FF38200E6A9CA /* OAuth2CodeGrantTests.swift in Sources */,

@@ -25,6 +25,8 @@ import XCTest
 import Base
 @testable
 import Flows
+@testable
+import TestUtils
 #else
 @testable
 import OAuth2
@@ -117,9 +119,7 @@ class OAuth2ExchangeAccessTokenForResourceTests: XCTestCase {
 		oauth.accessToken = "current_access_token"
 		
 		let resourcePath = "/events/558fca91-002d-4fca-a274-6031dd3119d9"
-		
-		let performer = OAuth2MockPerformer()
-		performer.responseJSON = [
+		let response: OAuth2JSON = [
 			"access_token": "resource_aware_access_token",
 			"issued_token_type": "urn:ietf:params:oauth:token-type:access_token",
 			"token_type": "Bearer",
@@ -127,7 +127,8 @@ class OAuth2ExchangeAccessTokenForResourceTests: XCTestCase {
 			"scope": "login and more",
 			"cluster_id": "eu1"
 		]
-		oauth.requestPerformer = performer
+		
+		oauth.requestPerformer = OAuth2MockPerformer(response)
 		
 		let token = try await oauth.doExchangeAccessTokenForResource(resourcePath: resourcePath)
 		XCTAssertEqual(token, "resource_aware_access_token", "Expecting correct accessToken")
