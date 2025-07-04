@@ -327,6 +327,9 @@ open class OAuth2: OAuth2Base {
 		if let clientId = clientId {
 			req.params["client_id"] = clientId
 		}
+		if let resourceURIs = clientConfig.resourceURIs {
+			req.params.setMultiple(key: "resource", values: resourceURIs)
+		}
 		req.add(params: params)
 		
 		return req
@@ -450,21 +453,20 @@ open class OAuth2: OAuth2Base {
 
 	This will set "grant_type" to "urn:ietf:params:oauth:grant-type:token-exchange", add the access token, and take care of the remaining parameters.
 
-	- parameter resourcePath:     The path of the resource requesting for its own access token
 	- parameter params:           Additional parameters to pass during resource access token exchange
 	- returns:                    An `OAuth2AuthRequest` instance that is configured for resource access token exchange
 	*/
-	open func tokenRequestForExchangeAccessTokenForResource(resourcePath: String, params: OAuth2StringDict? = nil) throws -> OAuth2AuthRequest {
+	open func tokenRequestForExchangeAccessTokenForResource(params: OAuth2StringDict? = nil) throws -> OAuth2AuthRequest {
 		guard let accessToken = clientConfig.accessToken, !accessToken.isEmpty else {
 			throw OAuth2Error.noAccessToken
 		}
-		guard let resourceUrl = clientConfig.resourceURL else {
-			throw OAuth2Error.noResourceURL
+		guard let resourceURIs = clientConfig.resourceURIs, !resourceURIs.isEmpty else {
+			throw OAuth2Error.noResourceURI
 		}
 
 		let req = OAuth2AuthRequest(url: (clientConfig.tokenURL ?? clientConfig.authorizeURL))
 		req.params["grant_type"] = OAuth2GrantTypes.tokenExchange
-		req.params["resource"] = resourceUrl.appendingPathComponent(resourcePath).absoluteString
+		req.params.setMultiple(key: "resource", values: resourceURIs)
 		req.params["scope"] = clientConfig.scope
 		req.params["requested_token_type"] = OAuth2TokenTypeIdentifiers.accessToken
 		req.params["subject_token"] = accessToken
@@ -474,17 +476,21 @@ open class OAuth2: OAuth2Base {
 		return req
 	}
 	
+	// TODO:
 	/**
 	Exchanges the access token for resource access token.
 
-	- parameter resourcePath: The path of the resource requesting for its own access token
 	- parameter params: Optional key/value pairs to pass during token exchange
 	- returns: Exchanged access token
 	*/
-	open func doExchangeAccessTokenForResource(resourcePath: String, params: OAuth2StringDict? = nil) async throws -> String {
+	open func doExchangeAccessTokenForResource(params: OAuth2StringDict? = nil) async throws -> String {
 		do {
-			let post = try tokenRequestForExchangeAccessTokenForResource(resourcePath: resourcePath, params: params).asURLRequest(for: self)
-			logger?.debug("OAuth2", msg: "Exchanging access token for resource \(resourcePath) from \(post.url?.description ?? "nil")")
+			guard let resourceURIs = clientConfig.resourceURIs, !resourceURIs.isEmpty else {
+				throw OAuth2Error.noResourceURI
+			}
+			
+			let post = try tokenRequestForExchangeAccessTokenForResource(params: params).asURLRequest(for: self)
+			logger?.debug("OAuth2", msg: "Exchanging access token for resource(s) \(resourceURIs) from \(post.url?.description ?? "nil")")
 
 			let response = await perform(request: post)
 			let data = try response.responseData()
@@ -498,7 +504,7 @@ open class OAuth2: OAuth2Base {
 			}
 			return exchangedAccessToken
 		} catch let error {
-			self.logger?.debug("OAuth2", msg: "Error exchanging access token for resource \(resourcePath): \(error)")
+			self.logger?.debug("OAuth2", msg: "Error exchanging access token for resource(s): \(error)")
 			throw error.asOAuth2Error
 		}
 	}

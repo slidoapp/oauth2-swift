@@ -77,12 +77,24 @@ class OAuth2AuthRequestTests: XCTestCase {
 		XCTAssertEqual("AA", req.params["a"])
 		
 		req.params["c"] = "A complicated/surprising name & character=fun"
-		req.params.removeValue(forKey: "b")
+		req.params.removeValues(forKey: "b")
 		XCTAssertTrue(2 == req.params.count)
 		let str = req.params.percentEncodedQueryString()
 
 		let parts = Set(str.split(separator: "&"))
 		XCTAssertEqual(parts, Set(["a=AA", "c=A+complicated%2Fsurprising+name+%26+character%3Dfun"]))
+	}
+	
+	func testMultipleParamsWithSameKey() {
+		let req = OAuth2AuthRequest(url: URL(string: "http://localhost")!)
+		req.params.setMultiple(key: "multiple", values: ["a", "b", "c"])
+		XCTAssertTrue(3 == req.params.getMultiple(forKey: "multiple").count)
+		XCTAssertEqual(["a", "b", "c"], req.params.getMultiple(forKey: "multiple"))
+
+		let removedValues = req.params.removeValues(forKey: "multiple")
+		XCTAssertTrue(3 == removedValues.count)
+		XCTAssertEqual(["a", "b", "c"], removedValues)
+		XCTAssertTrue(0 == req.params.getMultiple(forKey: "multiple").count)
 	}
 	
 	func testURLComponents() {

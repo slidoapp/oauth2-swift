@@ -39,8 +39,10 @@ class OAuth2ExchangeAccessTokenForResourceTests: XCTestCase {
 			"client_id": "abc",
 			"authorize_uri": "https://auth.ful.io",
 			"token_uri": "https://token.ful.io",
-			"resource_uri": "https://resource.ful.io",
-			"scope": "login and more"
+			"scope": "login and more",
+			"resource_uris": [
+				"https://resource.ful.io/resources/558fca91-002d-4fca-a274-6031dd3119d9"
+			]
 		]
 	
 	func testInit() {
@@ -49,88 +51,59 @@ class OAuth2ExchangeAccessTokenForResourceTests: XCTestCase {
 		XCTAssertEqual(oauth.scope, "login and more")
 		
 		XCTAssertEqual(oauth.authURL, URL(string: "https://auth.ful.io")!, "Must init `authorize_uri`")
-		XCTAssertEqual(oauth.clientConfig.resourceURL!, URL(string: "https://resource.ful.io")!, "Must init `resource_uri`")
 		XCTAssertEqual(oauth.tokenURL!, URL(string: "https://token.ful.io")!, "Must init `token_uri`")
 	}
 
-	func testExchangeAccessTokenForEventResourceRequest() throws {
+	func testExchangeAccessTokenForResourceRequest() throws {
 		let oauth = OAuth2(settings: baseSettings)
 		
 		oauth.verbose = false
 		oauth.clientConfig.accessToken = "access_token"
 		
-		let resourcePath = "/events/558fca91-002d-4fca-a274-6031dd3119d9"
-		let req = try! oauth.tokenRequestForExchangeAccessTokenForResource(resourcePath: resourcePath).asURLRequest(for: oauth)
-		
-		let comp = URLComponents(url: req.url!, resolvingAgainstBaseURL: true)!
-		XCTAssertEqual("https", comp.scheme!, "Need correct scheme")
-		XCTAssertEqual("token.ful.io", comp.host!, "Need correct host")
-		
-		let httpBody = String(data: req.httpBody!, encoding: .utf8)
-		let params = OAuth2.params(fromQuery: httpBody!)
-		
-		XCTAssertEqual(params["resource"]!, "https://resource.ful.io/events/558fca91-002d-4fca-a274-6031dd3119d9", "Expecting correct `resource`")
-		assertParams(params: params)
-	}
-	
-	func testExchangeAccessTokenForAccountsResourceRequest() throws {
-		let oauth = OAuth2(settings: baseSettings)
-		
-		oauth.verbose = false
-		oauth.clientConfig.accessToken = "access_token"
-		
-		let resourcePath = "/accounts/558fca91-002d-4fca-a274-6031dd3119d9"
-		let req = try! oauth.tokenRequestForExchangeAccessTokenForResource(resourcePath: resourcePath).asURLRequest(for: oauth)
-		
-		let comp = URLComponents(url: req.url!, resolvingAgainstBaseURL: true)!
-		XCTAssertEqual("https", comp.scheme!, "Need correct scheme")
-		XCTAssertEqual("token.ful.io", comp.host!, "Need correct host")
+		let req = try! oauth.tokenRequestForExchangeAccessTokenForResource().asURLRequest(for: oauth)
 		
 		let httpBody = String(data: req.httpBody!, encoding: .utf8)
 		let params = OAuth2.params(fromQuery: httpBody!)
 	
-		XCTAssertEqual(params["resource"]!, "https://resource.ful.io/accounts/558fca91-002d-4fca-a274-6031dd3119d9", "Expecting correct `resource`")
+		XCTAssertEqual(params["resource"]!, "https://resource.ful.io/resources/558fca91-002d-4fca-a274-6031dd3119d9", "Expecting correct `resource`")
 		assertParams(params: params)
 	}
-
-	func testExchangeAccessTokenForTeamspaceResourceRequest() throws {
+	
+	func testExchangeAccessTokenForMultipleResourcesRequest() throws {
 		let oauth = OAuth2(settings: baseSettings)
 		
 		oauth.verbose = false
 		oauth.clientConfig.accessToken = "access_token"
+		oauth.clientConfig.resourceURIs = [
+			"https://resource.ful.io/resources/1",
+			"https://resource.ful.io/resources/2"
+		]
 		
-		let resourcePath = "/teamspaces/558fca91-002d-4fca-a274-6031dd3119d9"
-		let req = try! oauth.tokenRequestForExchangeAccessTokenForResource(resourcePath: resourcePath).asURLRequest(for: oauth)
-		
-		let comp = URLComponents(url: req.url!, resolvingAgainstBaseURL: true)!
-		XCTAssertEqual("https", comp.scheme!, "Need correct scheme")
-		XCTAssertEqual("token.ful.io", comp.host!, "Need correct host")
+		let req = try! oauth.tokenRequestForExchangeAccessTokenForResource().asURLRequest(for: oauth)
 		
 		let httpBody = String(data: req.httpBody!, encoding: .utf8)
 		let params = OAuth2.params(fromQuery: httpBody!)
 		
-		XCTAssertEqual(params["resource"]!, "https://resource.ful.io/teamspaces/558fca91-002d-4fca-a274-6031dd3119d9", "Expecting correct `resource`")
+		XCTAssertEqual(params["resource"]!, "https://resource.ful.io/resources/1\nhttps://resource.ful.io/resources/2", "Expecting correct `resource`")
 		assertParams(params: params)
 	}
 	
 	func testExchangeAccessTokenForResource() async throws {
 		let oauth = OAuth2(settings: baseSettings)
-		
+
 		oauth.accessToken = "current_access_token"
 		
-		let resourcePath = "/events/558fca91-002d-4fca-a274-6031dd3119d9"
-		let response: OAuth2JSON = [
+		let performer = OAuth2MockPerformer([
 			"access_token": "resource_aware_access_token",
 			"issued_token_type": "urn:ietf:params:oauth:token-type:access_token",
 			"token_type": "Bearer",
 			"expires_in": 600,
 			"scope": "login and more",
 			"cluster_id": "eu1"
-		]
+		])
+		oauth.requestPerformer = performer
 		
-		oauth.requestPerformer = OAuth2MockPerformer(response)
-		
-		let token = try await oauth.doExchangeAccessTokenForResource(resourcePath: resourcePath)
+		let token = try await oauth.doExchangeAccessTokenForResource()
 		XCTAssertEqual(token, "resource_aware_access_token", "Expecting correct accessToken")
 		XCTAssertEqual(oauth.accessToken, "resource_aware_access_token", "Expecting correct accessToken is set")
 		self.assertDatesWithBuffer(date1: oauth.accessTokenExpiry!, date2: Date(timeIntervalSinceNow: 600), bufferInSeconds: 5)
@@ -138,11 +111,9 @@ class OAuth2ExchangeAccessTokenForResourceTests: XCTestCase {
 	
 	func testExchangeAccessTokenForResourceAccessTokenNotAvailable() async throws {
 		let oauth = OAuth2(settings: baseSettings)
-	
-		let resourcePath = "/events/558fca91-002d-4fca-a274-6031dd3119d9"
 
 		do {
-			_ = try await oauth.doExchangeAccessTokenForResource(resourcePath: resourcePath)
+			_ = try await oauth.doExchangeAccessTokenForResource()
 		} catch {
 			XCTAssertEqual(error.asOAuth2Error, OAuth2Error.noAccessToken)
 		}

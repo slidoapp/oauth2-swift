@@ -204,8 +204,8 @@ open class OAuth2AuthRequest {
 				else {
 					throw OAuth2Error.utf8EncodeError
 				}
-				finalParams.removeValue(forKey: "client_id")
-				finalParams.removeValue(forKey: "client_secret")
+				finalParams.removeValues(forKey: "client_id")
+				finalParams.removeValues(forKey: "client_secret")
 			}
 		}
 		
@@ -251,23 +251,39 @@ public struct OAuth2RequestParams {
 	
 	public subscript(key: String) -> String? {
 		get {
-			return params?[key]
+			return params?[key]?.split(separator: "\n").map(String.init).first
 		}
 		set(newValue) {
 			params = params ?? OAuth2StringDict()
 			params![key] = newValue
 		}
 	}
+
+	/**
+	Returns all the values associated with a given parameter as an array.
+	 
+	- parameter forKey: The name of the parameter to return.
+	- returns: An array of strings, which may be empty if no values for the given parameter are found.
+	*/
+	public func getMultiple(forKey key: String) -> [String] {
+		return params?[key]?.split(separator: "\n").map(String.init) ?? []
+	}
+	
+	public mutating func setMultiple(key: String, values: any Sequence<String>) {
+		params = params ?? OAuth2StringDict()
+		params![key] = values.sorted().joined(separator: "\n")
+	}
 	
 	/**
-	Removes the given value from the receiver, if it is defined.
+	Removes the given values from the receiver, if it is defined.
 	
-	- parameter forKey: The key for the value to be removed
-	- returns: The value that was removed, if any
+	- parameter forKey: The key for the values to be removed
+	- returns: The values that was removed, if any
 	*/
 	@discardableResult
-	public mutating func removeValue(forKey key: String) -> String? {
-		return params?.removeValue(forKey: key)
+	public mutating func removeValues(forKey key: String) -> [String] {
+		let removedValue = params?.removeValue(forKey: key)
+		return removedValue?.split(separator: "\n").map(String.init) ?? []
 	}
 	
 	/// The number of items in the receiver.
@@ -320,7 +336,9 @@ public struct OAuth2RequestParams {
 	public static func formEncodedQueryStringFor(_ params: OAuth2StringDict) -> String {
 		var arr: [String] = []
 		for (key, val) in params {
-			arr.append("\(key)=\(val.wwwFormURLEncodedString)")
+			for subVal in val.split(separator: "\n").map(String.init) {
+                arr.append("\(key)=\(subVal.wwwFormURLEncodedString)")
+            }
 		}
 		return arr.joined(separator: "&")
 	}
