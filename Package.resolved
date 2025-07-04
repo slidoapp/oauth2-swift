@@ -2,6 +2,15 @@
   "object": {
     "pins": [
       {
+        "package": "Semaphore",
+        "repositoryURL": "https://github.com/groue/Semaphore.git",
+        "state": {
+          "branch": null,
+          "revision": "2543679282aa6f6c8ecf2138acd613ed20790bc2",
+          "version": "0.1.0"
+        }
+      },
+      {
         "package": "SwiftKeychain",
         "repositoryURL": "https://github.com/slidoapp/SwiftKeychain.git",
         "state": {
