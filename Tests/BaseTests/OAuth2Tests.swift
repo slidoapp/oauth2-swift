@@ -166,16 +166,23 @@ class OAuth2Tests: XCTestCase {
 		XCTAssertEqual(params3["access_token"]!, "xxx==")
 		XCTAssertEqual(params3["expires"]!, "2015-00-00")
 		XCTAssertEqual(params3["more"]!, "spacey stuff with a +")
+		
+		let params4 = OAuth2.params(fromQuery: "access_token=xxx&expires=2015-00-00&more=stuff1&more=stuff2")
+		XCTAssert(3 == params4.count, "Expecting 3 URL params") // Query parameters with the same key are treated as a single multi-value parameter
+		
+		XCTAssertEqual(params4["access_token"]!, "xxx")
+		XCTAssertEqual(params4["expires"]!, "2015-00-00")
+		XCTAssertEqual(params4["more"]!, "stuff1\nstuff2")
 	}
 	
 	func testQueryParamConversion() {
-		let qry = OAuth2RequestParams.formEncodedQueryStringFor(["a": "AA", "b": "BB", "x": "yz"])
-		XCTAssertEqual(14, qry.count, "Expecting a 14 character string")
+		let qry = OAuth2RequestParams.formEncodedQueryStringFor(["a": "AA", "b": "BB", "x": "y\nz"])
+		XCTAssertEqual(17, qry.count, "Expecting a 17 character string")
 		
 		let dict = OAuth2.params(fromQuery: qry)
 		XCTAssertEqual(dict["a"]!, "AA", "Must unpack `a`")
 		XCTAssertEqual(dict["b"]!, "BB", "Must unpack `b`")
-		XCTAssertEqual(dict["x"]!, "yz", "Must unpack `x`")
+		XCTAssertEqual(dict["x"]!, "y\nz", "Must unpack `x`")
 	}
 	
 	func testQueryParamEncoding() {

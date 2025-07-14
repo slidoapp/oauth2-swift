@@ -72,6 +72,9 @@ open class OAuth2CodeGrant: OAuth2 {
 		if clientConfig.useProofKeyForCodeExchange {
 			req.params["code_verifier"] = context.codeVerifier
 		}
+		if let resourceURIs = clientConfig.resourceURIs {
+			req.params.setMultiple(key: "resource", values: resourceURIs)
+		}
 		return req
 	}
 	

@@ -197,14 +197,19 @@ open class OAuth2Requestable {
 	- returns: A dictionary full of strings with the key-value pairs found in the query
 	*/
 	public final class func params(fromQuery query: String) -> OAuth2StringDict {
-		let parts = query.split() { $0 == "&" }.map() { String($0) }
+		let parts = query.split(separator: "&")
 		var params = OAuth2StringDict(minimumCapacity: parts.count)
+
 		for part in parts {
-			let subparts = part.split() { $0 == "=" }.map() { String($0) }
-			if 2 == subparts.count {
-				params[subparts[0]] = subparts[1].wwwFormURLDecodedString
+			let subparts = part.split(separator: "=").map(String.init)
+			guard subparts.count == 2 else {
+				continue
 			}
+			
+			let (key, value) = (subparts[0], subparts[1].wwwFormURLDecodedString)
+			params[key] = [params[key], value].compactMap { $0 }.joined(separator: "\n")
 		}
+
 		return params
 	}
 }
