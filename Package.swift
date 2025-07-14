@@ -31,11 +31,12 @@ let package = Package(
 	],
 	dependencies: [
 		.package(url: "https://github.com/slidoapp/SwiftKeychain.git", .upToNextMinor(from: "2.1.0")),
+		.package(url: "https://github.com/groue/Semaphore.git", .upToNextMinor(from: "0.1.0"))
 	],
 	targets: [
 		.target(name: "OAuth2",
 			dependencies: ["Base", "Flows", "DataLoader"]),
-		.target(name: "Base", dependencies: ["SwiftKeychain"]),
+		.target(name: "Base", dependencies: ["SwiftKeychain", "Semaphore"]),
 		.target(name: "macOS", dependencies: [.target(name: "Base")]),
 		.target(name: "iOS", dependencies: [.target(name: "Base")]),
 		.target(name: "tvOS", dependencies: [.target(name: "Base")]),

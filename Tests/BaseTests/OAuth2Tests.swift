@@ -238,5 +238,36 @@ class OAuth2Tests: XCTestCase {
 		XCTAssertEqual("refresh_token_for_client2", client2RefreshToken)
 		XCTAssertEqual("def", oauth.refreshToken)
 	}
+	
+	func testDoExchangeRefreshTokenInParallel() async throws {
+		let oauth = OAuth2(settings: [:])
+		oauth.clientConfig.refreshToken = "abc"
+		
+		oauth.requestPerformer = OAuth2MockPerformer { reqParams in
+			let audience = reqParams?["audience"] ?? "unknown"
+			
+			return .init(
+				json: [
+					"access_token": "refresh_token_for_\(audience)",
+					"issued_token_type": "urn:ietf:params:oauth:token-type:refresh_token",
+					"refresh_token": "def",
+					"token_type": "Bearer"
+				],
+				delayMs: 1000
+			)
+		}
+		
+		async let exchange1 = oauth.doExchangeRefreshToken(audienceClientId: "client1", traceId: "")
+		async let exchange2 = oauth.doExchangeRefreshToken(audienceClientId: "client2", traceId: "")
+		async let exchange3 = oauth.doExchangeRefreshToken(audienceClientId: "client3", traceId: "")
+			
+		let tokens = try await [exchange1, exchange2, exchange3]
+		
+		XCTAssertEqual("refresh_token_for_client1", tokens[0])
+		XCTAssertEqual("refresh_token_for_client2", tokens[1])
+		XCTAssertEqual("refresh_token_for_client3", tokens[2])
+		XCTAssertEqual("def", oauth.refreshToken)
+	}
+
 }
 
