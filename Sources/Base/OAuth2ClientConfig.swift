@@ -102,6 +102,17 @@ open class OAuth2ClientConfig {
 	/// See https://tools.ietf.org/html/rfc7636
 	///
 	open var useProofKeyForCodeExchange = false
+	
+	
+	/// If the refresh token rotation is enabled, the authorization server issues a new refresh token with every access token refresh response (the previous refresh token is invalidated).
+	///
+	/// We need to know whether this functionality is enabled on the auth server to prevent concurrent calls to any operations that could rotate the refresh token.
+	/// If the refresh token rotation is enabled, these calls must always be executed sequentially to ensure that only the most recently rotated refresh token is persisted.
+	///
+	/// Read more about it here:
+	/// https://datatracker.ietf.org/doc/html/rfc9700#name-refresh-token-protection
+	/// https://auth0.com/docs/secure/tokens/refresh-tokens/refresh-token-rotation
+	open var refreshTokenRotationIsEnabled = true
 
 	/// Optional custom User-Agent string for embedded mode.
 	open var customUserAgent: String?
@@ -170,6 +181,10 @@ open class OAuth2ClientConfig {
 		
 		if let usePKCE = settings["use_pkce"] as? Bool {
 			useProofKeyForCodeExchange = usePKCE
+		}
+		
+		if let refreshTokenRotation = settings["refresh_token_rotation"] as? Bool {
+			refreshTokenRotationIsEnabled = refreshTokenRotation
 		}
 		
 		customUserAgent = settings["custom_user_agent"] as? String

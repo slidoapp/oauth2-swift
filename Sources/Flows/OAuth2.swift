@@ -50,8 +50,8 @@ open class OAuth2: OAuth2Base {
 	/// The authorizer to use for UI handling, depending on platform.
 	open var authorizer: OAuth2AuthorizerUI!
 	
-	/// The semaphore preventing concurrent execution of `doExchangeRefreshToken()` function.
-	private let exchangeRefreshTokenSemaphore = AsyncSemaphore(value: 1)
+	/// The semaphore preventing concurrent execution of any function that could rotate the refresh token.
+	private var refreshTokenRotationSemaphore: AsyncSemaphore?
 	
 	
 	/**
@@ -85,7 +85,11 @@ open class OAuth2: OAuth2Base {
 	*/
 	override public init(settings: OAuth2JSON) {
 		super.init(settings: settings)
-		authorizer = OAuth2Authorizer(oauth2: self)
+		self.authorizer = OAuth2Authorizer(oauth2: self)
+		
+		if (self.clientConfig.refreshTokenRotationIsEnabled) {
+			self.refreshTokenRotationSemaphore = AsyncSemaphore(value: 1)
+		}
 	}
 	
 	
@@ -109,9 +113,6 @@ open class OAuth2: OAuth2Base {
 		guard !self.isAuthorizing else {
 			throw OAuth2Error.alreadyAuthorizing
 		}
-
-		/// Wait for all running exchanges to finish
-		await self.exchangeRefreshTokenSemaphore.wait()
 		
 		self.isAuthorizing = true
 		logger?.debug("OAuth2", msg: "Starting authorization")
@@ -347,6 +348,12 @@ open class OAuth2: OAuth2Base {
 	- returns: OAuth2 JSON dictionary
 	*/
 	open func doRefreshToken(params: OAuth2StringDict? = nil) async throws -> OAuth2JSON {
+		/// Wait for all running rotations to finish
+		await self.refreshTokenRotationSemaphore?.wait()
+		defer {
+			self.refreshTokenRotationSemaphore?.signal()
+		}
+		
 		do {
 			let post = try tokenRequestForTokenRefresh(params: params).asURLRequest(for: self)
 			logger?.debug("OAuth2", msg: "Using refresh token to receive access token from \(post.url?.description ?? "nil")")
@@ -407,10 +414,10 @@ open class OAuth2: OAuth2Base {
 	- returns: Exchanged refresh token
 	*/
 	open func doExchangeRefreshToken(audienceClientId: String, traceId: String, params: OAuth2StringDict? = nil) async throws -> String {
-		/// Make sure no two tasks can execute `doExchangeRefreshToken()` concurrently.
-		await exchangeRefreshTokenSemaphore.wait()
+		/// Wait for all running rotations to finish
+		await self.refreshTokenRotationSemaphore?.wait()
 		defer {
-			exchangeRefreshTokenSemaphore.signal()
+			self.refreshTokenRotationSemaphore?.signal()
 		}
 		
 		debugPrint("[doExchangeRefreshToken] Started for \(audienceClientId)")
@@ -481,7 +488,6 @@ open class OAuth2: OAuth2Base {
 		return req
 	}
 	
-	// TODO:
 	/**
 	Exchanges the access token for resource access token.
 
@@ -489,6 +495,12 @@ open class OAuth2: OAuth2Base {
 	- returns: Exchanged access token
 	*/
 	open func doExchangeAccessTokenForResource(params: OAuth2StringDict? = nil) async throws -> String {
+		/// Wait for all running rotations to finish
+		await self.refreshTokenRotationSemaphore?.wait()
+		defer {
+			self.refreshTokenRotationSemaphore?.signal()
+		}
+		
 		do {
 			guard let resourceURIs = clientConfig.resourceURIs, !resourceURIs.isEmpty else {
 				throw OAuth2Error.noResourceURI
