@@ -19,7 +19,6 @@
 //
 
 import Foundation
-
 #if !NO_MODULE_IMPORT
 import Base
 import Flows
@@ -29,8 +28,7 @@ import Flows
 /**
 A class that makes loading data from a protected endpoint easier.
 */
-@OAuth2Actor
-open class OAuth2DataLoader {
+open class OAuth2DataLoader: OAuth2Requestable {
 	
 	/// The OAuth2 instance used for OAuth2 access tokvarretrieval.
 	public let oauth2: OAuth2
@@ -38,12 +36,7 @@ open class OAuth2DataLoader {
 	/// If set to true, a 403 is treated as a 401. The default is false.
 	public var alsoIntercept403: Bool = false
 	
-	var logger: OAuth2Logger? {
-		self.oauth2.logger
-	}
 	
-	private let requester: OAuth2Requestable
-
 	/**
 	Designated initializer.
 	
@@ -52,15 +45,11 @@ open class OAuth2DataLoader {
 	- parameter oauth2: The OAuth2 instance to use for authorization when loading data.
 	- parameter host:   If given will handle redirects within the same host by way of `OAuth2DataLoaderSessionTaskDelegate`
 	*/
-	public init(oauth2: OAuth2, host: String? = nil, requestPerformer: OAuth2RequestPerformer? = nil) {
+	public init(oauth2: OAuth2, host: String? = nil) {
 		self.oauth2 = oauth2
-		self.requester = OAuth2Requestable(logger: oauth2.logger)
-
-		if let host {
-			self.requester.sessionDelegate = OAuth2DataLoaderSessionTaskDelegate(loader: self, host: host)
-		}
-		if let requestPerformer {
-			self.requester.requestPerformer = requestPerformer
+		super.init(logger: oauth2.logger)
+		if let host = host {
+			sessionDelegate = OAuth2DataLoaderSessionTaskDelegate(loader: self, host: host)
 		}
 	}
 	
@@ -78,15 +67,41 @@ open class OAuth2DataLoader {
 	
 	The callback is easy to use, like so:
 	
-	    perform(request: req) { dataStatusResponse in
-	        do {
-	            let (data, status) = try dataStatusResponse()
-	            // do what you must with `data` as Data and `status` as Int
-	        }
-	        catch let error {
-	            // the request failed because of `error`
-	        }
-	    }
+		perform(request: req) { dataStatusResponse in
+			do {
+				let (data, status) = try dataStatusResponse()
+				// do what you must with `data` as Data and `status` as Int
+			}
+			catch let error {
+				// the request failed because of `error`
+			}
+		}
+	
+	- parameter request:  The request to execute
+	*/
+	override open func perform(request: URLRequest) async -> OAuth2Response {
+		return await withCheckedContinuation { continuation in
+			perform(request: request, retry: true) { response in
+				continuation.resume(returning: response)
+			}
+		}
+	}
+	
+	/**
+	Intercepts `unauthorizedClient` errors, stops and enqueues all calls, starts the authorization and, upon
+	success, resumes all enqueued calls.
+	
+	The callback is easy to use, like so:
+	
+		perform(request: req) { dataStatusResponse in
+			do {
+				let (data, status) = try dataStatusResponse()
+				// do what you must with `data` as Data and `status` as Int
+			}
+			catch let error {
+				// the request failed because of `error`
+			}
+		}
 	
 	- parameter request:  The request to execute
 	- parameter callback: The callback to call when the request completes/fails. Looks terrifying, see above on how to use it
@@ -103,15 +118,15 @@ open class OAuth2DataLoader {
 	
 	The callback is easy to use, like so:
 	
-	    perform(request: req) { dataStatusResponse in
-	        do {
-	            let (data, status) = try dataStatusResponse()
-	            // do what you must with `data` as Data and `status` as Int
-	        }
-	        catch let error {
-	            // the request failed because of `error`
-	        }
-	    }
+		perform(request: req) { dataStatusResponse in
+			do {
+				let (data, status) = try dataStatusResponse()
+				// do what you must with `data` as Data and `status` as Int
+			}
+			catch let error {
+				// the request failed because of `error`
+			}
+		}
 	
 	- parameter request:  The request to execute
 	- parameter retry:    Whether the request should be retried on 401 (and possibly 403)
@@ -124,7 +139,7 @@ open class OAuth2DataLoader {
 		}
 		
 		Task {
-			let response = await self.requester.perform(request: request)
+			let response = await super.perform(request: request)
 			
 			do {
 				if self.alsoIntercept403, 403 == response.response.statusCode {
@@ -139,19 +154,16 @@ open class OAuth2DataLoader {
 				if retry {
 					self.enqueue(request: request, callback: callback)
 					self.oauth2.clientConfig.accessToken = nil
-					
-					
-					do {
-						let json = try await self.attemptToAuthorize()
-						guard  json != nil else {
-							throw OAuth2Error.requestCancelled
+					self.attemptToAuthorize() { json, error in
+						
+						// dequeue all if we're authorized, throw all away if something went wrong
+						if nil != json {
+							self.retryAll()
 						}
-	
-						self.retryAll()
-					} catch {
-						self.throwAllAway(with: error.asOAuth2Error)
+						else {
+							self.throwAllAway(with: error ?? OAuth2Error.requestCancelled)
+						}
 					}
-	
 				}
 				else {
 					callback(response)
@@ -171,17 +183,23 @@ open class OAuth2DataLoader {
 	This method will ignore calls while authorization is ongoing, meaning you will only get the callback once per authorization cycle.
 	
 	- parameter callback: The callback passed on from `authorize(callback:)`. Authorization finishes successfully (auth parameters will be
-	                      non-nil but may be an empty dict), fails (error will be non-nil) or is canceled (both params and error are nil)
+						  non-nil but may be an empty dict), fails (error will be non-nil) or is canceled (both params and error are nil)
 	*/
-	open func attemptToAuthorize() async throws -> OAuth2JSON? {
-		guard !self.isAuthorizing else {
-			return nil
+	open func attemptToAuthorize(callback: @escaping ((OAuth2JSON?, OAuth2Error?) -> Void)) {
+		if !isAuthorizing {
+			isAuthorizing = true
+			
+			Task {
+				do {
+					let authParams = try await oauth2.authorize()
+					self.isAuthorizing = false
+					callback(authParams, nil)
+				} catch {
+					self.isAuthorizing = false
+					callback(nil, error.asOAuth2Error)
+				}
+			}
 		}
-		
-		self.isAuthorizing = true
-		let authParams = try await oauth2.authorize()
-		self.isAuthorizing = false
-		return authParams
 	}
 	
 	
@@ -252,4 +270,3 @@ open class OAuth2DataLoader {
 		}
 	}
 }
-
