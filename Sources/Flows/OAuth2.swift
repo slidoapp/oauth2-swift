@@ -19,6 +19,7 @@
 //
 
 import Foundation
+import Semaphore
 
 #if !NO_MODULE_IMPORT
  import Base
@@ -48,6 +49,9 @@ open class OAuth2: OAuth2Base {
 	
 	/// The authorizer to use for UI handling, depending on platform.
 	open var authorizer: OAuth2AuthorizerUI!
+	
+	/// The semaphore preventing concurrent execution of any function that could rotate the refresh token.
+	private var refreshTokenRotationSemaphore: AsyncSemaphore?
 	
 	
 	/**
@@ -81,7 +85,11 @@ open class OAuth2: OAuth2Base {
 	*/
 	override public init(settings: OAuth2JSON) {
 		super.init(settings: settings)
-		authorizer = OAuth2Authorizer(oauth2: self)
+		self.authorizer = OAuth2Authorizer(oauth2: self)
+		
+		if (self.clientConfig.refreshTokenRotationIsEnabled) {
+			self.refreshTokenRotationSemaphore = AsyncSemaphore(value: 1)
+		}
 	}
 	
 	
@@ -104,10 +112,6 @@ open class OAuth2: OAuth2Base {
 	public final func authorize(params: OAuth2StringDict? = nil) async throws -> OAuth2JSON? {
 		guard !self.isAuthorizing else {
 			throw OAuth2Error.alreadyAuthorizing
-		}
-
-		guard !isExchangingRefreshToken else {
-			throw OAuth2Error.alreadyExchangingRefreshToken
 		}
 		
 		self.isAuthorizing = true
@@ -344,6 +348,12 @@ open class OAuth2: OAuth2Base {
 	- returns: OAuth2 JSON dictionary
 	*/
 	open func doRefreshToken(params: OAuth2StringDict? = nil) async throws -> OAuth2JSON {
+		/// Wait for all running rotations to finish
+		await self.refreshTokenRotationSemaphore?.wait()
+		defer {
+			self.refreshTokenRotationSemaphore?.signal()
+		}
+		
 		do {
 			let post = try tokenRequestForTokenRefresh(params: params).asURLRequest(for: self)
 			logger?.debug("OAuth2", msg: "Using refresh token to receive access token from \(post.url?.description ?? "nil")")
@@ -404,12 +414,15 @@ open class OAuth2: OAuth2Base {
 	- returns: Exchanged refresh token
 	*/
 	open func doExchangeRefreshToken(audienceClientId: String, traceId: String, params: OAuth2StringDict? = nil) async throws -> String {
-		do {
-			guard !self.isExchangingRefreshToken else {
-				throw OAuth2Error.alreadyExchangingRefreshToken
-			}
-			self.isExchangingRefreshToken = true
+		/// Wait for all running rotations to finish
+		await self.refreshTokenRotationSemaphore?.wait()
+		defer {
+			self.refreshTokenRotationSemaphore?.signal()
+		}
+		
+		debugPrint("[doExchangeRefreshToken] Started for \(audienceClientId)")
 
+		do {
 			let post = try tokenRequestForExchangeRefreshToken(audienceClientId: audienceClientId, params: params).asURLRequest(for: self)
 			logger?.debug("OAuth2", msg: "Exchanging refresh token for client with ID \(audienceClientId) from \(post.url?.description ?? "nil") [trace=\(traceId)]")
 
@@ -437,11 +450,10 @@ open class OAuth2: OAuth2Base {
 			if self.useKeychain {
 				self.storeTokensToKeychain()
 			}
-			self.isExchangingRefreshToken = false
+			debugPrint("[doExchangeRefreshToken] Ended for \(audienceClientId)")
 			return exchangedRefreshToken
 		} catch {
 			self.logger?.debug("OAuth2", msg: "Error exchanging refresh in [trace=\(traceId)] token: \(error)")
-			self.isExchangingRefreshToken = false
 			throw error.asOAuth2Error
 		}
 	}
@@ -476,7 +488,6 @@ open class OAuth2: OAuth2Base {
 		return req
 	}
 	
-	// TODO:
 	/**
 	Exchanges the access token for resource access token.
 
@@ -484,6 +495,12 @@ open class OAuth2: OAuth2Base {
 	- returns: Exchanged access token
 	*/
 	open func doExchangeAccessTokenForResource(params: OAuth2StringDict? = nil) async throws -> String {
+		/// Wait for all running rotations to finish
+		await self.refreshTokenRotationSemaphore?.wait()
+		defer {
+			self.refreshTokenRotationSemaphore?.signal()
+		}
+		
 		do {
 			guard let resourceURIs = clientConfig.resourceURIs, !resourceURIs.isEmpty else {
 				throw OAuth2Error.noResourceURI

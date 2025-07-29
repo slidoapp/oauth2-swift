@@ -483,6 +483,12 @@ PKCE
 PKCE support is controlled by the `useProofKeyForCodeExchange` property, and the `use_pkce` key in the settings dictionary.
 It is disabled by default. When enabled, a new code verifier string is generated for every authorization request. 
 
+Refresh Token Rotation
+----------------------
+
+Refresh Token Rotation setting is controlled by the `refreshTokenRotationIsEnabled` property, and the `refresh_token_rotation` key in the settings dictionary.
+It is enabled by default. When enabled, all calls that could rotate the refresh token are executed sequentially to ensure that only the most recently rotated refresh token is persisted.
+
 
 Keychain
 --------

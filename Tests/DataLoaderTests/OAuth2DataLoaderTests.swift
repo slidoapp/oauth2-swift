@@ -41,23 +41,27 @@ class OAuth2DataLoaderTests: XCTestCase {
 	var oauth2: OAuth2PasswordGrant?
 	
 	var loader: OAuth2DataLoader?
-		
-	var dataPerformer: OAuth2AnyBearerPerformer?
-	
+			
 	override func setUp() async throws {
-		let response: OAuth2JSON = ["access_token": "toktok", "token_type": "bearer"]
-		oauth2 = OAuth2PasswordGrant(settings: ["client_id": "abc", "authorize_url": "https://oauth.io/authorize", "keychain": false] as OAuth2JSON)
+		let response: OAuth2JSON = [
+			"access_token": "toktok",
+			"token_type": "bearer"
+		]
+		oauth2 = OAuth2PasswordGrant(settings: [
+			"client_id": "abc",
+			"authorize_url": "https://oauth.io/authorize",
+			"keychain": false
+		] as OAuth2JSON)
 		oauth2!.logger = OAuth2DebugLogger(.debug)
-//		oauth2!.logger = OAuth2DebugLogger(.trace)
 		oauth2!.username = "p2"
 		oauth2!.password = "test"
 		oauth2!.requestPerformer = OAuth2MockPerformer(response)
 		
-		dataPerformer = OAuth2AnyBearerPerformer()
-		loader = OAuth2DataLoader(oauth2: oauth2!, requestPerformer: dataPerformer)
+		loader = OAuth2DataLoader(oauth2: oauth2!)
+		loader!.requestPerformer = OAuth2AnyBearerPerformer()
 	}
 	
-	func testAutoEnqueue() {
+	func testAutoEnqueue() async {
 		XCTAssertNil(oauth2!.accessToken)
 		let req1 = oauth2!.request(forURL: URL(string: "http://auth.io/data/user")!)
 		let wait1 = expectation(description: "req1")
@@ -86,12 +90,11 @@ class OAuth2DataLoaderTests: XCTestCase {
 			}
 			wait2.fulfill()
 		}
-		waitForExpectations(timeout: 4.0) { error in
-			XCTAssertNil(error)
-		}
+		
+		/// Asynchronously await for the expectation to fulfill.
+		await fulfillment(of: [wait1, wait2], timeout: 4.0)
 	}
 }
-
 
 class OAuth2AnyBearerPerformer: OAuth2RequestPerformer {
 	
