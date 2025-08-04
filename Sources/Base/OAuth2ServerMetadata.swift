@@ -6,6 +6,9 @@
 //  Copyright © 2025 Pascal Pfiffner. All rights reserved.
 //
 
+#if !NO_MODULE_IMPORT
+import Constants
+#endif
 
 /// https://datatracker.ietf.org/doc/html/rfc8414#section-2
 public struct OAuth2ServerMetadata: Decodable {

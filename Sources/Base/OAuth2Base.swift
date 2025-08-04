@@ -21,6 +21,10 @@
 import Foundation
 import CommonCrypto
 
+#if !NO_MODULE_IMPORT
+import Constants
+#endif
+
 /**
 Class extending on OAuth2Requestable, exposing configuration and maintaining context, serving as base class for `OAuth2`.
 */
