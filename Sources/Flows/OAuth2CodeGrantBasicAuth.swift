@@ -42,11 +42,11 @@ open class OAuth2CodeGrantBasicAuth: OAuth2CodeGrant {
 	
 	- basic: takes precedence over client_id and client_secret for the token request Authorization header
 	*/
-	override public init(settings: OAuth2JSON) {
+	override public init(settings: OAuth2JSON, serverMetadata: OAuth2ServerMetadata? = nil) {
 		if let basic = settings["basic"] as? String {
 			basicToken = basic
 		}
-		super.init(settings: settings)
+		super.init(settings: settings, serverMetadata: serverMetadata)
 	}
 	
 	/**

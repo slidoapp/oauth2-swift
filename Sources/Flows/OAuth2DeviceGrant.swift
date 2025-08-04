@@ -32,7 +32,7 @@ open class OAuth2DeviceGrant: OAuth2 {
 	}
 	
 	override open class var responseType: String? {
-		return ""
+		return nil
 	}
 		
 	open func deviceAccessTokenRequest(with deviceCode: String) throws -> OAuth2AuthRequest {

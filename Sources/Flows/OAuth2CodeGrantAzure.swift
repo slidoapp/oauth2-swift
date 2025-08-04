@@ -36,8 +36,8 @@ public class OAuth2CodeGrantAzure: OAuth2CodeGrant {
 	- parameter settings: The settings for this client
 	- parameter resource: The resource we want to use
 	*/
-	public init(settings: OAuth2JSON, resource: String) {
-		super.init(settings: settings)
+	public init(settings: OAuth2JSON, serverMetadata: OAuth2ServerMetadata? = nil, resource: String) {
+		super.init(settings: settings, serverMetadata: serverMetadata)
 		clientConfig.secretInBody = true
 		clientConfig.customParameters = [
 			"resource": resource

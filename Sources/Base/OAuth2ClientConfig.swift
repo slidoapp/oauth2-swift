@@ -120,22 +120,25 @@ open class OAuth2ClientConfig {
 	/**
 	Initializer to initialize properties from a settings dictionary.
 	*/
-	public init(settings: OAuth2JSON) {
+	public init(settings: OAuth2JSON, serverMetadata: OAuth2ServerMetadata?) {
 		clientId = settings["client_id"] as? String
 		clientSecret = settings["client_secret"] as? String
 		clientName = settings["client_name"] as? String
-		
-		// authorize URL
+
 		var aURL: URL?
-		if let auth = settings["authorize_uri"] as? String {
-			aURL = URL(string: auth)
+		if let authorizeUri = settings["authorize_uri"] as? String {
+			aURL = URL(string: authorizeUri)
+		} else if let authorizationEndpoint = serverMetadata?.authorizationEndpoint {
+			aURL = URL(string: authorizationEndpoint)
 		}
 		authorizeURL = aURL ?? URL(string: "https://localhost/p2.OAuth2.defaultAuthorizeURI")!
 		
-		// token, device code, registration and logo URLs
-		if let token = settings["token_uri"] as? String {
-			tokenURL = URL(string: token)
+		if let tokenUri = settings["token_uri"] as? String {
+			tokenURL = URL(string: tokenUri)
+		} else if let tokenEndpoint = serverMetadata?.tokenEndpoint {
+			tokenURL = URL(string: tokenEndpoint)
 		}
+		
 		if let deviceAuthorize = settings["device_authorize_uri"] as? String {
 			deviceAuthorizeURL = URL(string: deviceAuthorize)
 		}

@@ -181,16 +181,20 @@ open class OAuth2Base: OAuth2Securable {
 	
 	- verbose (Bool, false by default, applies to client logging)
 	*/
-	override public init(settings: OAuth2JSON) {
-		clientConfig = OAuth2ClientConfig(settings: settings)
+	override public init(settings: OAuth2JSON, serverMetadata: OAuth2ServerMetadata?) {
+		clientConfig = OAuth2ClientConfig(settings: settings, serverMetadata: serverMetadata)
 		
 		// auth configuration options
 		if let ttl = settings["title"] as? String {
 			authConfig.ui.title = ttl
 		}
-		super.init(settings: settings)
+		
+		super.init(settings: settings, serverMetadata: serverMetadata)
+		
+		if let serverMetadata {
+			self.validateConfiguration(against: serverMetadata)
+		}
 	}
-	
 	
 	// MARK: - Keychain Integration
 	
@@ -290,28 +294,39 @@ open class OAuth2Base: OAuth2Securable {
 	/**
 	Internally used on error, calls the callbacks on the main thread with the appropriate error message.
 	
-	This method is only made public in case you want to create a subclass and need to call `didFail(error:)` at an override point. If you
-	call this method yourself on your OAuth2 instance you might screw things up royally.
+	This method handles authorization failures by cleaning up state, logging the error,
+	and notifying all registered callbacks. It ensures proper cleanup of async continuations
+	and maintains thread safety by dispatching callbacks to the main thread.
 	
-	- parameter error: The error that led to authorization failure; will use `.requestCancelled` on the callbacks if nil is passed
+	This method is only made public in case you want to create a subclass and need to call 
+	`didFail(with:)` at an override point. If you call this method yourself on your OAuth2 
+	instance you might cause unexpected behavior.
+	
+	- parameter error: The error that led to authorization failure; will use `.requestCancelled` if nil is passed
 	*/
 	public final func didFail(with error: OAuth2Error?) {
-		var finalError = error
-		if let error = finalError {
-			logger?.debug("OAuth2", msg: "\(error)")
+		let finalError = error ?? OAuth2Error.requestCancelled
+		
+		// Log the error with appropriate level
+		if let error = error {
+			logger?.warn("OAuth2", msg: "Authorization failed with error: \(error)")
+		} else {
+			logger?.debug("OAuth2", msg: "Authorization was cancelled or aborted")
 		}
-		else {
-			finalError = OAuth2Error.requestCancelled
-		}
+		
+		// Dispatch callbacks to main thread with proper error handling
 		callOnMainThread() {
 			self.isAuthorizing = false
 			self.internalAfterAuthorizeOrFail?(true, finalError)
 			self.afterAuthorizeOrFail?(nil, finalError)
 		}
 		
-		// Finish `doAuthorize` call
-		self.doAuthorizeContinuation?.resume(throwing: error ?? OAuth2Error.requestCancelled)
-		self.doAuthorizeContinuation = nil
+		// Complete async continuation if present
+		if let continuation = doAuthorizeContinuation {
+			continuation.resume(throwing: finalError)
+			doAuthorizeContinuation = nil
+			logger?.trace("OAuth2", msg: "Completed async authorization continuation with error")
+		}
 	}
 	
 	/**
@@ -504,87 +519,27 @@ open class OAuth2Base: OAuth2Securable {
 	open func assureRefreshTokenParamsAreValid(_ params: OAuth2JSON) throws {
 	}
 
-}
-
-
-/**
-Class, internally used, to store current authorization context, such as state and redirect-url.
-*/
-open class OAuth2ContextStore {
-	
-	/// Currently used redirect_url.
-	open var redirectURL: String?
-	
-	/// Current code verifier used for PKCE
-	public internal(set) var codeVerifier: String?
-	public let codeChallengeMethod = "S256"
-
-	/// The current state.
-	internal var _state = ""
-	
 	/**
-	The state sent to the server when requesting a token.
+	Validates the current OAuth2 configuration against server metadata.
 	
-	We internally generate a UUID and use the first 8 chars if `_state` is empty.
+	This method checks if the configured grant type and response type are supported
+	by the authorization server according to the provided metadata.
+	
+	- parameter serverMetadata: The server metadata to validate against
 	*/
-	open var state: String {
-		if _state.isEmpty {
-			_state = UUID().uuidString
-			_state = String(_state[_state.startIndex..<_state.index(_state.startIndex, offsetBy: 8)])        // only use the first 8 chars, should be enough
+	open func validateConfiguration(against serverMetadata: OAuth2ServerMetadata) {
+		// validate the grant type
+		let grantType = type(of: self).grantType
+		let grantTypesSupported = serverMetadata.grantTypesSupported ?? [OAuth2GrantTypes.authorizationCode, OAuth2GrantTypes.implicit]
+		if !grantTypesSupported.contains(grantType) {
+			logger?.warn("OAuth2", msg: "The authorization server doesn't support the \"\(grantType)\" grant type.")
 		}
-		return _state
-	}
-	
-	/**
-	Checks that given state matches the internal state.
-	
-	- parameter state: The state to check (may be nil)
-	- returns: true if state matches, false otherwise or if given state is nil.
-	*/
-	func matchesState(_ state: String?) -> Bool {
-		if let st = state {
-			return st == _state
+		
+		// validate the response type
+		if let responseType = type(of: self).responseType,
+		   !serverMetadata.responseTypesSupported.contains(responseType) {
+			logger?.warn("OAuth2", msg: "The authorization server doesn't support the \"\(responseType)\" response type.")
 		}
-		return false
-	}
-	
-	/**
-	Resets current state so it gets regenerated next time it's needed.
-	*/
-	func resetState() {
-		_state = ""
-	}
-	
-	// MARK: - PKCE
-	
-	/**
-	Generates a new code verifier string
-	*/
-	open func generateCodeVerifier() {
-		var buffer = [UInt8](repeating: 0, count: 32)
-		_ = SecRandomCopyBytes(kSecRandomDefault, buffer.count, &buffer)
-		codeVerifier = Data(buffer).base64EncodedString()
-			.replacingOccurrences(of: "+", with: "-")
-			.replacingOccurrences(of: "/", with: "_")
-			.replacingOccurrences(of: "=", with: "")
-			.trimmingCharacters(in: .whitespaces)
-	}
-	
-	
-	open func codeChallenge() -> String? {
-		guard let verifier = codeVerifier, let data = verifier.data(using: .utf8) else { return nil }
-		var buffer = [UInt8](repeating: 0,  count: Int(CC_SHA256_DIGEST_LENGTH))
-		data.withUnsafeBytes {
-			_ = CC_SHA256($0.baseAddress, CC_LONG(data.count), &buffer)
-		}
-		let hash = Data(buffer)
-		let challenge = hash.base64EncodedString()
-			.replacingOccurrences(of: "+", with: "-")
-			.replacingOccurrences(of: "/", with: "_")
-			.replacingOccurrences(of: "=", with: "")
-			.trimmingCharacters(in: .whitespaces)
-		return challenge
 	}
 	
 }
-
