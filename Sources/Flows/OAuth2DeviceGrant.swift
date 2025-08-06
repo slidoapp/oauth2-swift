@@ -179,7 +179,7 @@ fileprivate extension Task where Success == Never, Failure == Never {
 	}
 }
 
-public struct DeviceAuthorization {
+public struct DeviceAuthorization: Sendable {
 	public let userCode: String
 	public let verificationUrl: URL
 	public let verificationUrlComplete: URL?
