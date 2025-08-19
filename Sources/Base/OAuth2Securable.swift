@@ -65,7 +65,7 @@ open class OAuth2Securable: OAuth2Requestable {
 	
 	Looks at the `verbose`, `keychain`, `keychain_access_mode`, `keychain_access_group` `keychain_account_for_client_credentials` and `keychain_account_for_tokens`. Everything else is handled by subclasses.
 	*/
-	public init(settings: OAuth2JSON) {
+	public init(settings: OAuth2JSON, serverMetadata: OAuth2ServerMetadata?) {
 		self.settings = settings
 		
 		// keychain settings

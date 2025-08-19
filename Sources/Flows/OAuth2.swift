@@ -83,10 +83,10 @@ open class OAuth2: OAuth2Base {
 	
 	- verbose (bool, false by default, applies to client logging)
 	*/
-	override public init(settings: OAuth2JSON) {
-		super.init(settings: settings)
-		self.authorizer = OAuth2Authorizer(oauth2: self)
-		
+	override public init(settings: OAuth2JSON, serverMetadata: OAuth2ServerMetadata? = nil) {
+		super.init(settings: settings, serverMetadata: serverMetadata)
+		authorizer = OAuth2Authorizer(oauth2: self)
+
 		if (self.clientConfig.refreshTokenRotationIsEnabled) {
 			self.refreshTokenRotationSemaphore = AsyncSemaphore(value: 1)
 		}

@@ -65,7 +65,7 @@ class OAuth2MockPerformer: OAuth2RequestPerformer {
 		self.init { _ in .init(json: responseJson) }
 	}
 	
-	func perform(request: URLRequest) async throws -> (Data?, URLResponse) {
+	func perform(request: URLRequest) async throws -> (Data, URLResponse) {
 		var params: OAuth2StringDict?
 		
 		/// Parse request body as URL-encoded parameters if present
