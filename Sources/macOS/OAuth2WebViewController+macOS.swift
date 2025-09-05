@@ -68,7 +68,7 @@ public class OAuth2WebViewController: NSViewController, WKNavigationDelegate, NS
 					interceptComponents = URLComponents(url: url, resolvingAgainstBaseURL: true)
 				}
 				else {
-					oauth?.logger?.warn("OAuth2", msg: "Failed to parse URL \(interceptURLString!), discarding")
+					oauth?.logger?.warning("Failed to parse URL \(interceptURLString!), discarding")
 					interceptURLString = nil
 				}
 			}
@@ -283,14 +283,14 @@ public class OAuth2WebViewController: NSViewController, WKNavigationDelegate, NS
 			if let scheme = interceptComponents?.scheme, "urn" == scheme {
 				if let path = interceptComponents?.path, path.hasPrefix("ietf:wg:oauth:2.0:oob") {
 					if let title = await webView.title, title.hasPrefix("Success ") {
-						oauth?.logger?.debug("OAuth2", msg: "Creating redirect URL from document.title")
+						oauth?.logger?.debug("Creating redirect URL from document.title")
 						let qry = title.replacingOccurrences(of: "Success ", with: "")
 						if let url = URL(string: "http://localhost/?\(qry)") {
 							_ = await onIntercept?(url)
 							return
 						}
 						
-						oauth?.logger?.warn("OAuth2", msg: "Failed to create a URL with query parts \"\(qry)\"")
+						oauth?.logger?.warning("Failed to create a URL with query parts \"\(qry)\"")
 					}
 				}
 			}

@@ -115,7 +115,7 @@ open class OAuth2: OAuth2Base {
 		}
 		
 		self.isAuthorizing = true
-		logger?.debug("OAuth2", msg: "Starting authorization")
+		logger?.debug("Starting authorization")
 		
 		do {
 			if let successParams = try await tryToObtainAccessTokenIfNeeded(params: params) {
@@ -162,15 +162,15 @@ open class OAuth2: OAuth2Base {
 	*/
 	open func tryToObtainAccessTokenIfNeeded(params: OAuth2StringDict? = nil) async throws -> OAuth2JSON? {
 		if hasUnexpiredAccessToken() {
-			logger?.debug("OAuth2", msg: "Have an apparently unexpired access token")
+			logger?.debug("Have an apparently unexpired access token")
 			return OAuth2JSON()
 		}
 		else {
-			logger?.debug("OAuth2", msg: "No access token, checking if a refresh token is available")
+			logger?.debug("No access token, checking if a refresh token is available")
 			do {
 				return try await self.doRefreshToken(params: params)
 			} catch {
-				self.logger?.debug("OAuth2", msg: "Error refreshing token: \(error)")
+				self.logger?.debug("Error refreshing token: \(error)")
 			
 				switch error.asOAuth2Error {
 				case .noRefreshToken, .noClientId, .unauthorizedClient:
@@ -217,7 +217,7 @@ open class OAuth2: OAuth2Base {
 	*/
 	final func doOpenAuthorizeURLInBrowser(params: OAuth2StringDict? = nil) throws {
 		let url = try authorizeURL(params: params)
-		logger?.debug("OAuth2", msg: "Opening authorize URL in system browser: \(url)")
+		logger?.debug("Opening authorize URL in system browser: \(url)")
 		try authorizer.openAuthorizeURLInBrowser(url)
 	}
 	
@@ -233,7 +233,7 @@ open class OAuth2: OAuth2Base {
 	*/
 	final func doAuthorizeEmbedded(with config: OAuth2AuthConfig, params: OAuth2StringDict? = nil) async throws {
 		let url = try authorizeURL(params: params)
-		logger?.debug("OAuth2", msg: "Opening authorize URL embedded: \(url)")
+		logger?.debug("Opening authorize URL embedded: \(url)")
 		try await authorizer.authorizeEmbedded(with: config, at: url)
 	}
 	
@@ -356,7 +356,7 @@ open class OAuth2: OAuth2Base {
 		
 		do {
 			let post = try tokenRequestForTokenRefresh(params: params).asURLRequest(for: self)
-			logger?.debug("OAuth2", msg: "Using refresh token to receive access token from \(post.url?.description ?? "nil")")
+			logger?.debug("Using refresh token to receive access token from \(post.url?.description ?? "nil")")
 			
 			let response = await perform(request: post)
 			let data = try response.responseData()
@@ -365,7 +365,7 @@ open class OAuth2: OAuth2Base {
 				self.clientConfig.refreshToken = nil
 				throw OAuth2Error.generic("Failed with status \(response.response.statusCode)")
 			}
-			self.logger?.debug("OAuth2", msg: "Did use refresh token for access token [\(nil != self.clientConfig.accessToken)]")
+			self.logger?.debug("Did use refresh token for access token [\(nil != self.clientConfig.accessToken)]")
 			if (self.useKeychain) {
 				self.storeTokensToKeychain()
 			}
@@ -424,7 +424,7 @@ open class OAuth2: OAuth2Base {
 
 		do {
 			let post = try tokenRequestForExchangeRefreshToken(audienceClientId: audienceClientId, params: params).asURLRequest(for: self)
-			logger?.debug("OAuth2", msg: "Exchanging refresh token for client with ID \(audienceClientId) from \(post.url?.description ?? "nil") [trace=\(traceId)]")
+			logger?.debug("Exchanging refresh token for client with ID \(audienceClientId) from \(post.url?.description ?? "nil") [trace=\(traceId)]")
 
 			let response = await perform(request: post)
 			let data = try response.responseData()
@@ -445,15 +445,15 @@ open class OAuth2: OAuth2Base {
 			guard let exchangedRefreshToken = json["access_token"] as? String else {
 				throw OAuth2Error.generic("Exchange refresh token didn't return exchanged refresh token (response.access_token) [trace=\(traceId)]")
 			}
-			self.logger?.debug("OAuth2", msg: "Did use refresh token for exchanging refresh token [trace=\(traceId)]")
-			self.logger?.trace("OAuth2", msg: "Exchanged refresh token in [trace=\(traceId)] is [\(exchangedRefreshToken)]")
+			self.logger?.debug("Did use refresh token for exchanging refresh token [trace=\(traceId)]")
+			self.logger?.trace("Exchanged refresh token in [trace=\(traceId)] is [\(exchangedRefreshToken)]")
 			if self.useKeychain {
 				self.storeTokensToKeychain()
 			}
 			debugPrint("[doExchangeRefreshToken] Ended for \(audienceClientId)")
 			return exchangedRefreshToken
 		} catch {
-			self.logger?.debug("OAuth2", msg: "Error exchanging refresh in [trace=\(traceId)] token: \(error)")
+			self.logger?.debug("Error exchanging refresh in [trace=\(traceId)] token: \(error)")
 			throw error.asOAuth2Error
 		}
 	}
@@ -507,7 +507,7 @@ open class OAuth2: OAuth2Base {
 			}
 			
 			let post = try tokenRequestForExchangeAccessTokenForResource(params: params).asURLRequest(for: self)
-			logger?.debug("OAuth2", msg: "Exchanging access token for resource(s) \(resourceURIs) from \(post.url?.description ?? "nil")")
+			logger?.debug("Exchanging access token for resource(s) \(resourceURIs) from \(post.url?.description ?? "nil")")
 
 			let response = await perform(request: post)
 			let data = try response.responseData()
@@ -521,7 +521,7 @@ open class OAuth2: OAuth2Base {
 			}
 			return exchangedAccessToken
 		} catch let error {
-			self.logger?.debug("OAuth2", msg: "Error exchanging access token for resource(s): \(error)")
+			self.logger?.debug("Error exchanging access token for resource(s): \(error)")
 			throw error.asOAuth2Error
 		}
 	}

@@ -126,7 +126,7 @@ open class OAuth2PasswordGrant: OAuth2 {
 	- parameter params: Optional key/value pairs to pass during authorization
 	*/
 	private func askForCredentials(params: OAuth2StringDict? = nil) async throws {
-		logger?.debug("OAuth2", msg: "Presenting the login controller")
+		logger?.debug("Presenting the login controller")
 		guard let delegate = delegate else {
 			throw OAuth2Error.noPasswordGrantDelegate
 		}
@@ -178,7 +178,7 @@ open class OAuth2PasswordGrant: OAuth2 {
 	- parameter animated: Whether dismissal should be animated
 	*/
 	open func dismissLoginController(animated: Bool = true) {
-		logger?.debug("OAuth2", msg: "Dismissing the login controller")
+		logger?.debug("Dismissing the login controller")
 		customAuthorizer.dismissLoginController(animated: animated)
 		if isAuthorizing {
 			didFail(with: nil)
@@ -227,7 +227,7 @@ open class OAuth2PasswordGrant: OAuth2 {
 	public func obtainAccessToken(params: OAuth2StringDict? = nil) async throws -> OAuth2JSON {
 		do {
 			let post = try accessTokenRequest(params: params).asURLRequest(for: self)
-			logger?.debug("OAuth2", msg: "Requesting new access token from \(post.url?.description ?? "nil")")
+			logger?.debug("Requesting new access token from \(post.url?.description ?? "nil")")
 			
 			let response = await self.perform(request: post)
 			let data = try response.responseData()
@@ -235,7 +235,7 @@ open class OAuth2PasswordGrant: OAuth2 {
 			if response.response.statusCode >= 400 {
 				throw OAuth2Error.generic("Failed with status \(response.response.statusCode)")
 			}
-			self.logger?.debug("OAuth2", msg: "Did get access token [\(nil != self.clientConfig.accessToken)]")
+			self.logger?.debug("Did get access token [\(nil != self.clientConfig.accessToken)]")
 			return dict
 		}
 		catch OAuth2Error.unauthorizedClient {     // TODO: which one is it?
@@ -245,7 +245,7 @@ open class OAuth2PasswordGrant: OAuth2 {
 			throw OAuth2Error.wrongUsernamePassword
 		}
 		catch {
-			self.logger?.debug("OAuth2", msg: "Error obtaining access token: \(error)")
+			self.logger?.debug("Error obtaining access token: \(error)")
 			throw error
 		}
 	}

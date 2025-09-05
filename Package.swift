@@ -31,12 +31,13 @@ let package = Package(
 	],
 	dependencies: [
 		.package(url: "https://github.com/slidoapp/SwiftKeychain.git", .upToNextMinor(from: "2.1.0")),
-		.package(url: "https://github.com/groue/Semaphore.git", .upToNextMinor(from: "0.1.0"))
+		.package(url: "https://github.com/groue/Semaphore.git", .upToNextMinor(from: "0.1.0")),
+		.package(url: "https://github.com/apple/swift-log.git", .upToNextMinor(from: "1.6.4"))
 	],
 	targets: [
 		.target(name: "OAuth2",
 			dependencies: ["Base", "Flows", "DataLoader"]),
-		.target(name: "Base", dependencies: ["SwiftKeychain", "Semaphore"]),
+		.target(name: "Base", dependencies: ["SwiftKeychain", "Semaphore", .product(name: "Logging", package: "swift-log")]),
 		.target(name: "macOS", dependencies: [.target(name: "Base")]),
 		.target(name: "iOS", dependencies: [.target(name: "Base")]),
 		.target(name: "tvOS", dependencies: [.target(name: "Base")]),

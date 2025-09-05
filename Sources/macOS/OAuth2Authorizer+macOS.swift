@@ -136,7 +136,7 @@ open class OAuth2Authorizer: OAuth2AuthorizerUI {
 					do {
 						try await self.oauth2.handleRedirectURL(url)
 					} catch let err {
-						self.oauth2.logger?.warn("OAuth2", msg: "Cannot intercept redirect URL: \(err)")
+						self.oauth2.logger?.warning("Cannot intercept redirect URL: \(err)")
 					}
 				}
 			} else {
@@ -227,7 +227,7 @@ open class OAuth2Authorizer: OAuth2AuthorizerUI {
 				return true
 			}
 			catch let error {
-				self.oauth2.logger?.warn("OAuth2", msg: "Cannot intercept redirect URL: \(error)")
+				self.oauth2.logger?.warning("Cannot intercept redirect URL: \(error)")
 			}
 			return false
 		}
