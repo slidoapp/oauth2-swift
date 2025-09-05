@@ -71,7 +71,7 @@ Need to specify a separate refresh token URI? You can set the `refresh_uri` in t
 Need to debug? Use a `.debug` or even a `.trace` logger:
 
 ```swift
-oauth2.logger = OAuth2DebugLogger(.trace)
+oauth2.logger?.logLevel = .trace
 ```
 
 For more see [advanced settings](#advanced-settings) below.
@@ -554,6 +554,10 @@ These three steps are needed to:
 2. Link the framework into your app
 3. Embed the framework in your app when distributing
 
+Swift Logging
+-------------
+
+This library uses the [Swift logging system](https://swiftpackageindex.com/apple/swift-log) for internal logging. You can adjust the log level and configure the logger as needed for your application.
 
 License
 -------

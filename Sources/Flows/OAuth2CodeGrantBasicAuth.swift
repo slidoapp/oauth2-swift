@@ -55,11 +55,11 @@ open class OAuth2CodeGrantBasicAuth: OAuth2CodeGrant {
 	override open func accessTokenRequest(with code: String, params: OAuth2StringDict? = nil) throws -> OAuth2AuthRequest {
 		let req = try super.accessTokenRequest(with: code, params: params)
 		if let basic = basicToken {
-			logger?.debug("OAuth2", msg: "Overriding “Basic” authorization header, as specified during client initialization")
+			logger?.debug("Overriding “Basic” authorization header, as specified during client initialization")
 			req.set(header: "Authorization", to: "Basic \(basic)")
 		}
 		else {
-			logger?.warn("OAuth2", msg: "Using extended code grant, but “basicToken” is not actually specified. Using standard code grant.")
+			logger?.warning("Using extended code grant, but “basicToken” is not actually specified. Using standard code grant.")
 		}
 		return req
 	}

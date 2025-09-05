@@ -40,7 +40,7 @@ open class OAuth2ImplicitGrant: OAuth2 {
 	}
 	
 	override open func handleRedirectURL(_ redirect: URL) async throws -> OAuth2JSON {
-		logger?.debug("OAuth2", msg: "Handling redirect URL \(redirect.description)")
+		logger?.debug("Handling redirect URL \(redirect.description)")
 		do {
 			// token should be in the URL fragment
 			let comp = URLComponents(url: redirect, resolvingAgainstBaseURL: true)
@@ -50,7 +50,7 @@ open class OAuth2ImplicitGrant: OAuth2 {
 			
 			let params = type(of: self).params(fromQuery: fragment)
 			let dict = try parseAccessTokenResponse(params: params)
-			logger?.debug("OAuth2", msg: "Successfully extracted access token")
+			logger?.debug("Successfully extracted access token")
 			didAuthorize(withParameters: dict)
 			return dict
 		}

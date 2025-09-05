@@ -77,12 +77,12 @@ open class OAuth2ClientCredentials: OAuth2 {
 	public func obtainAccessToken(params: OAuth2StringDict? = nil) async throws -> OAuth2JSON {
 		do {
 			let post = try accessTokenRequest(params: params).asURLRequest(for: self)
-			logger?.debug("OAuth2", msg: "Requesting new access token from \(post.url?.description ?? "nil")")
+			logger?.debug("Requesting new access token from \(post.url?.description ?? "nil")")
 			
 			let response = await perform(request: post)
 			let data = try response.responseData()
 			let params = try self.parseAccessTokenResponse(data: data)
-			self.logger?.debug("OAuth2", msg: "Did get access token [\(nil != self.clientConfig.accessToken)]")
+			self.logger?.debug("Did get access token [\(nil != self.clientConfig.accessToken)]")
 			return params
 		}
 		catch {
