@@ -9,6 +9,10 @@
 /* Begin PBXBuildFile section */
 		0C2F5E5B1DE2DB8500F621E0 /* OAuth2CodeGrantAzure.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0C2F5E5A1DE2DB8500F621E0 /* OAuth2CodeGrantAzure.swift */; };
 		19C919DD1E51CC8000BFC834 /* OAuth2CustomAuthorizer+macOS.swift in Sources */ = {isa = PBXBuildFile; fileRef = 19C919DC1E51CC8000BFC834 /* OAuth2CustomAuthorizer+macOS.swift */; };
+		5EA7ED3A2E6ED86100124A26 /* Logging in Frameworks */ = {isa = PBXBuildFile; productRef = 5EA7ED392E6ED86100124A26 /* Logging */; };
+		5EA7ED3C2E6ED87300124A26 /* Logging in Frameworks */ = {isa = PBXBuildFile; productRef = 5EA7ED3B2E6ED87300124A26 /* Logging */; };
+		5EA7ED3E2E6ED87900124A26 /* Logging in Frameworks */ = {isa = PBXBuildFile; productRef = 5EA7ED3D2E6ED87900124A26 /* Logging */; };
+		5EA7ED402E6ED87E00124A26 /* Logging in Frameworks */ = {isa = PBXBuildFile; productRef = 5EA7ED3F2E6ED87E00124A26 /* Logging */; };
 		6598544E1C5B3C9500237D39 /* OAuth2Authorizer+tvOS.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6598543F1C5B3B4000237D39 /* OAuth2Authorizer+tvOS.swift */; };
 		6598544F1C5B3C9C00237D39 /* OAuth2Base.swift in Sources */ = {isa = PBXBuildFile; fileRef = EEDB8640193FAB9200C4EEA1 /* OAuth2Base.swift */; };
 		659854501C5B3C9C00237D39 /* OAuth2Requestable.swift in Sources */ = {isa = PBXBuildFile; fileRef = EEF47D2A1B1E3FDD0057D838 /* OAuth2Requestable.swift */; };
@@ -118,9 +122,6 @@
 		EEACE1DD1A7E8DF7009BF3A7 /* extensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = EEDB864B19421DAD00C4EEA1 /* extensions.swift */; };
 		EEACE1DF1A7E8FC1009BF3A7 /* OAuth2CodeGrantFacebook.swift in Sources */ = {isa = PBXBuildFile; fileRef = EEACE1DE1A7E8FC1009BF3A7 /* OAuth2CodeGrantFacebook.swift */; };
 		EEACE1E01A7E8FC5009BF3A7 /* OAuth2CodeGrantFacebook.swift in Sources */ = {isa = PBXBuildFile; fileRef = EEACE1DE1A7E8FC1009BF3A7 /* OAuth2CodeGrantFacebook.swift */; };
-		EEAEF10B1CDBCF28001A1C6F /* OAuth2Logger.swift in Sources */ = {isa = PBXBuildFile; fileRef = EEAEF10A1CDBCF28001A1C6F /* OAuth2Logger.swift */; };
-		EEAEF10C1CDBCF28001A1C6F /* OAuth2Logger.swift in Sources */ = {isa = PBXBuildFile; fileRef = EEAEF10A1CDBCF28001A1C6F /* OAuth2Logger.swift */; };
-		EEAEF10D1CDBCF28001A1C6F /* OAuth2Logger.swift in Sources */ = {isa = PBXBuildFile; fileRef = EEAEF10A1CDBCF28001A1C6F /* OAuth2Logger.swift */; };
 		EEB9A97C1D86C34E0022EF66 /* OAuth2Response.swift in Sources */ = {isa = PBXBuildFile; fileRef = EEB9A97B1D86C34E0022EF66 /* OAuth2Response.swift */; };
 		EEB9A97D1D86C34E0022EF66 /* OAuth2Response.swift in Sources */ = {isa = PBXBuildFile; fileRef = EEB9A97B1D86C34E0022EF66 /* OAuth2Response.swift */; };
 		EEB9A97E1D86C34E0022EF66 /* OAuth2Response.swift in Sources */ = {isa = PBXBuildFile; fileRef = EEB9A97B1D86C34E0022EF66 /* OAuth2Response.swift */; };
@@ -239,7 +240,6 @@
 		EE9EBF1A1D775F74003263FC /* OAuth2Securable.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = OAuth2Securable.swift; sourceTree = "<group>"; };
 		EEAC17A01CAA69110025F84B /* CONTRIBUTORS.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = CONTRIBUTORS.md; sourceTree = "<group>"; };
 		EEACE1DE1A7E8FC1009BF3A7 /* OAuth2CodeGrantFacebook.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = OAuth2CodeGrantFacebook.swift; sourceTree = "<group>"; };
-		EEAEF10A1CDBCF28001A1C6F /* OAuth2Logger.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = OAuth2Logger.swift; sourceTree = "<group>"; };
 		EEB9A97B1D86C34E0022EF66 /* OAuth2Response.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = OAuth2Response.swift; sourceTree = "<group>"; };
 		EEB9A97F1D86CD4A0022EF66 /* OAuth2DataLoaderTests.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = OAuth2DataLoaderTests.swift; sourceTree = "<group>"; };
 		EEB9A9821D86D36A0022EF66 /* OAuth2RequestPerformer.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = OAuth2RequestPerformer.swift; sourceTree = "<group>"; };
@@ -263,6 +263,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				5EA7ED3E2E6ED87900124A26 /* Logging in Frameworks */,
 				871279812DB152B300A5AF72 /* SwiftKeychain in Frameworks */,
 				8760AE602E16C78000020465 /* Semaphore in Frameworks */,
 			);
@@ -272,6 +273,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				5EA7ED3C2E6ED87300124A26 /* Logging in Frameworks */,
 				8712797F2DB152AE00A5AF72 /* SwiftKeychain in Frameworks */,
 				8760AE5E2E16C77C00020465 /* Semaphore in Frameworks */,
 			);
@@ -281,6 +283,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				5EA7ED3A2E6ED86100124A26 /* Logging in Frameworks */,
 				8712797D2DB152A800A5AF72 /* SwiftKeychain in Frameworks */,
 				8760AE5C2E16C77700020465 /* Semaphore in Frameworks */,
 			);
@@ -290,6 +293,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				5EA7ED402E6ED87E00124A26 /* Logging in Frameworks */,
 				871279832DB152BB00A5AF72 /* SwiftKeychain in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -355,7 +359,6 @@
 				EEB9A9821D86D36A0022EF66 /* OAuth2RequestPerformer.swift */,
 				EEB9A97B1D86C34E0022EF66 /* OAuth2Response.swift */,
 				EE79F6591BFAA36900746243 /* OAuth2Error.swift */,
-				EEAEF10A1CDBCF28001A1C6F /* OAuth2Logger.swift */,
 				65EC05DF1C9050CB00DE9186 /* OAuth2KeychainAccount.swift */,
 				EE29EABB195A0DB2008882C8 /* OAuth2DebugURLSessionDelegate.swift */,
 				EE2983741D40BE7600933CDD /* OAuth2AuthorizerUI.swift */,
@@ -661,6 +664,7 @@
 			packageReferences = (
 				8712797A2DB151ED00A5AF72 /* XCRemoteSwiftPackageReference "SwiftKeychain" */,
 				8760AE5A2E16C5E800020465 /* XCRemoteSwiftPackageReference "Semaphore" */,
+				5EA7ED382E6ED86100124A26 /* XCRemoteSwiftPackageReference "swift-log" */,
 			);
 			productRefGroup = EEDB8625193FAAE500C4EEA1 /* Products */;
 			projectDirPath = "";
@@ -739,7 +743,6 @@
 				EE9EBF151D775A21003263FC /* OAuth2DataLoader.swift in Sources */,
 				EE1070361E5C7A4200250586 /* OAuth2CustomAuthorizerUI.swift in Sources */,
 				87FABDDE2DC9F2DF00E0C67B /* OAuth2Actor.swift in Sources */,
-				EEAEF10D1CDBCF28001A1C6F /* OAuth2Logger.swift in Sources */,
 				EE9EBF1D1D775F74003263FC /* OAuth2Securable.swift in Sources */,
 				659854521C5B3C9C00237D39 /* OAuth2AuthConfig.swift in Sources */,
 				EEC49F331C9BF22400989A18 /* OAuth2AuthRequest.swift in Sources */,
@@ -754,7 +757,6 @@
 			buildActionMask = 2147483647;
 			files = (
 				EEACE1DD1A7E8DF7009BF3A7 /* extensions.swift in Sources */,
-				EEAEF10C1CDBCF28001A1C6F /* OAuth2Logger.swift in Sources */,
 				EE20118D1E44D0BD00913FA7 /* OAuth2DataLoaderSessionTaskDelegate.swift in Sources */,
 				65EC05E11C9050CB00DE9186 /* OAuth2KeychainAccount.swift in Sources */,
 				87FABDDF2DC9F2DF00E0C67B /* OAuth2Actor.swift in Sources */,
@@ -798,7 +800,6 @@
 			buildActionMask = 2147483647;
 			files = (
 				EEACE1DC1A7E8DF6009BF3A7 /* extensions.swift in Sources */,
-				EEAEF10B1CDBCF28001A1C6F /* OAuth2Logger.swift in Sources */,
 				65EC05E01C9050CB00DE9186 /* OAuth2KeychainAccount.swift in Sources */,
 				0C2F5E5B1DE2DB8500F621E0 /* OAuth2CodeGrantAzure.swift in Sources */,
 				DD0CCBAD1C4DC83A0044C4E3 /* OAuth2WebViewController+macOS.swift in Sources */,
@@ -1273,6 +1274,14 @@
 /* End XCConfigurationList section */
 
 /* Begin XCRemoteSwiftPackageReference section */
+		5EA7ED382E6ED86100124A26 /* XCRemoteSwiftPackageReference "swift-log" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/apple/swift-log.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 1.6.4;
+			};
+		};
 		8712797A2DB151ED00A5AF72 /* XCRemoteSwiftPackageReference "SwiftKeychain" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/slidoapp/SwiftKeychain";
@@ -1292,6 +1301,26 @@
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
+		5EA7ED392E6ED86100124A26 /* Logging */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 5EA7ED382E6ED86100124A26 /* XCRemoteSwiftPackageReference "swift-log" */;
+			productName = Logging;
+		};
+		5EA7ED3B2E6ED87300124A26 /* Logging */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 5EA7ED382E6ED86100124A26 /* XCRemoteSwiftPackageReference "swift-log" */;
+			productName = Logging;
+		};
+		5EA7ED3D2E6ED87900124A26 /* Logging */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 5EA7ED382E6ED86100124A26 /* XCRemoteSwiftPackageReference "swift-log" */;
+			productName = Logging;
+		};
+		5EA7ED3F2E6ED87E00124A26 /* Logging */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 5EA7ED382E6ED86100124A26 /* XCRemoteSwiftPackageReference "swift-log" */;
+			productName = Logging;
+		};
 		8712797C2DB152A800A5AF72 /* SwiftKeychain */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = 8712797A2DB151ED00A5AF72 /* XCRemoteSwiftPackageReference "SwiftKeychain" */;

@@ -71,7 +71,7 @@ Need to specify a separate refresh token URI? You can set the `refresh_uri` in t
 Need to debug? Use a `.debug` or even a `.trace` logger:
 
 ```swift
-oauth2.logger = OAuth2DebugLogger(.trace)
+oauth2.logger?.logLevel = .trace
 ```
 
 For more see [advanced settings](#advanced-settings) below.
