@@ -86,10 +86,10 @@ open class OAuth2PasswordGrant: OAuth2 {
 	/**
 	Adds support for the "password" & "username" setting.
 	*/
-	override public init(settings: OAuth2JSON) {
+	override public init(settings: OAuth2JSON, serverMetadata: OAuth2ServerMetadata? = nil) {
 		username = settings["username"] as? String
 		password = settings["password"] as? String
-		super.init(settings: settings)
+		super.init(settings: settings, serverMetadata: serverMetadata)
 	}
 	
 	

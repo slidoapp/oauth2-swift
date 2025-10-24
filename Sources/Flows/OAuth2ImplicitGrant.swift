@@ -27,7 +27,7 @@ import Constants
 
 
 /**
-Class to handle OAuth2 requests for public clients, such as distributed Mac/iOS Apps.
+Class to handle OAuth2 requests for public clients, such as distributed macOS/iOS Apps.
 */
 open class OAuth2ImplicitGrant: OAuth2 {
 	

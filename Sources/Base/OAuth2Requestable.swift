@@ -123,7 +123,7 @@ open class OAuth2Requestable {
 		do {
 			// TODO: add support for aborting the request, see https://www.hackingwithswift.com/quick-start/concurrency/how-to-cancel-a-task
 			let (sessData, sessResponse) = try await performer.perform(request: request)
-			self.logger?.trace("OAuth2", msg: "RESPONSE\n\(sessResponse.debugDescription)\n\n\(String(data: sessData ?? Data(), encoding: String.Encoding.utf8) ?? "no data")\n---")
+			self.logger?.trace("OAuth2", msg: "RESPONSE\n\(sessResponse.debugDescription)\n\n\(String(data: sessData, encoding: String.Encoding.utf8) ?? "no data")\n---")
 			
 			guard let response = sessResponse as? HTTPURLResponse else {
 				throw CommonError.castError(

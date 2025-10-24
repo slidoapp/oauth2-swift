@@ -47,9 +47,9 @@ public class OAuth2ClientCredentialsReddit: OAuth2ClientCredentials {
 	
 	- parameter settings: The authorization settings
 	*/
-	override public init(settings: OAuth2JSON) {
+	override public init(settings: OAuth2JSON, serverMetadata: OAuth2ServerMetadata? = nil) {
 		deviceId = settings["device_id"] as? String
-		super.init(settings: settings)
+		super.init(settings: settings, serverMetadata: serverMetadata)
 		clientConfig.clientSecret = ""
 	}
 	
