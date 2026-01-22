@@ -189,14 +189,14 @@ open class OAuth2AuthRequest {
 			
 			// add to request body
 			if oauth2.clientConfig.secretInBody {
-				oauth2.logger?.debug("OAuth2", msg: "Adding “client_id” and “client_secret” to request body")
+				oauth2.logger?.debug("Adding “client_id” and “client_secret” to request body")
 				finalParams["client_id"] = clientId
 				finalParams["client_secret"] = secret
 			}
 			
 			// add Authorization header (if not in body)
 			else {
-				oauth2.logger?.debug("OAuth2", msg: "Adding “Authorization” header as “Basic client-key:client-secret”")
+				oauth2.logger?.debug("Adding “Authorization” header as “Basic client-key:client-secret”")
 				let pw = "\(clientId.wwwFormURLEncodedString):\(secret.wwwFormURLEncodedString)"
 				if let utf8 = pw.data(using: oauth2.clientConfig.authStringEncoding) {
 					req.setValue("Basic \(utf8.base64EncodedString())", forHTTPHeaderField: "Authorization")
@@ -212,13 +212,13 @@ open class OAuth2AuthRequest {
 		// add custom headers, first from our OAuth2 instance, then our custom ones
 		if let headers = oauth2.authHeaders {
 			for (key, val) in headers {
-				oauth2.logger?.trace("OAuth2", msg: "Overriding “\(key)” header")
+				oauth2.logger?.trace("Overriding “\(key)” header")
 				req.setValue(val, forHTTPHeaderField: key)
 			}
 		}
 		if let headers = headers {
 			for (key, val) in headers {
-				oauth2.logger?.trace("OAuth2", msg: "Adding custom “\(key)” header")
+				oauth2.logger?.trace("Adding custom “\(key)” header")
 				req.setValue(val, forHTTPHeaderField: key)
 			}
 		}

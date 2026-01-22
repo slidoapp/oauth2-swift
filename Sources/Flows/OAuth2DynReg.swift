@@ -58,14 +58,14 @@ open class OAuth2DynReg {
 	open func register(client: OAuth2) async throws -> OAuth2JSON {
 		do {
 			let req = try registrationRequest(for: client)
-			client.logger?.debug("OAuth2", msg: "Registering client at \(req.url!) with scopes “\(client.scope ?? "(none)")”")
+			client.logger?.debug("Registering client at \(req.url!) with scopes “\(client.scope ?? "(none)")”")
 			
 			let response = await client.perform(request: req)
 			let data = try response.responseData()
 			let dict = try self.parseRegistrationResponse(data: data, client: client)
 			try client.assureNoErrorInResponse(dict)
 			if response.response.statusCode >= 400 {
-				client.logger?.warn("OAuth2", msg: "Registration failed with \(response.response.statusCode)")
+				client.logger?.warning("Registration failed with \(response.response.statusCode)")
 			} else {
 				self.didRegisterWith(json: dict, client: client)
 			}
@@ -99,7 +99,7 @@ open class OAuth2DynReg {
 			}
 		}
 		let body = registrationBody(for: client)
-		client.logger?.debug("OAuth2", msg: "Registration parameters: \(body)")
+		client.logger?.debug("Registration parameters: \(body)")
 		req.httpBody = try JSONSerialization.data(withJSONObject: body, options: [])
 		
 		return req
@@ -159,15 +159,15 @@ open class OAuth2DynReg {
 	open func didRegisterWith(json: OAuth2JSON, client: OAuth2) {
 		if let id = json["client_id"] as? String {
 			client.clientId = id
-			client.logger?.debug("OAuth2", msg: "Did register with client-id “\(id)”, params: \(json)")
+			client.logger?.debug("Did register with client-id “\(id)”, params: \(json)")
 		}
 		else {
-			client.logger?.debug("OAuth2", msg: "Did register but did not get a client-id. Params: \(json)")
+			client.logger?.debug("Did register but did not get a client-id. Params: \(json)")
 		}
 		if let secret = json["client_secret"] as? String {
 			client.clientSecret = secret
 			if let expires = json["client_secret_expires_at"] as? Double, 0 != expires {
-				client.logger?.debug("OAuth2", msg: "Client secret will expire on \(Date(timeIntervalSince1970: expires))")
+				client.logger?.debug("Client secret will expire on \(Date(timeIntervalSince1970: expires))")
 			}
 		}
 		if let methodName = json["token_endpoint_auth_method"] as? String, let method = OAuth2EndpointAuthMethod(rawValue: methodName) {

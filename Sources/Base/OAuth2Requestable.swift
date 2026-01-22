@@ -19,6 +19,7 @@
 //
 
 import Foundation
+import Logging
 
 
 /// Typealias to ease working with JSON dictionaries.
@@ -40,12 +41,13 @@ open class OAuth2Requestable {
 	/// Set to `true` to log all the things. `false` by default. Use `"verbose": bool` in settings or assign `logger` yourself.
 	open var verbose = false {
 		didSet {
-			logger = verbose ? OAuth2DebugLogger() : nil
+			logger = verbose ? Logger(label: "OAuth2") : nil
+			logger?.logLevel = .debug		// make debug logger
 		}
 	}
 	
 	/// The logger being used. Auto-assigned to a debug logger if you set `verbose` to true or false.
-	open var logger: OAuth2Logger?
+	open var logger: Logger?
 	
 	
 	/**
@@ -53,19 +55,20 @@ open class OAuth2Requestable {
 	*/
 	public init(verbose: Bool) {
 		self.verbose = verbose
-		logger = verbose ? OAuth2DebugLogger() : nil
-		logger?.debug("OAuth2", msg: "Initialization finished")
+		logger = verbose ? Logger(label: "OAuth2") : nil
+		logger?.logLevel = .debug		// make debug logger
+		logger?.debug("Initialization finished")
 	}
 	
 	/**
 	Designated initializer.
 	
-	- parameter logger: An optional `OAuth2Logger` instance to use
+	- parameter logger: An optional `Logger` (swift-log) instance to use
 	*/
-	public init(logger: OAuth2Logger?) {
+	public init(logger: Logger?) {
 		self.logger = logger
 		self.verbose = (nil != logger)
-		logger?.debug("OAuth2", msg: "Initialization finished")
+		logger?.debug("Initialization finished")
 	}
 	
 	
@@ -116,14 +119,14 @@ open class OAuth2Requestable {
 	- returns : OAuth2 response
 	*/
 	open func perform(request: URLRequest) async -> OAuth2Response {
-		self.logger?.trace("OAuth2", msg: "REQUEST\n\(request.debugDescription)\n---")
+		self.logger?.trace("REQUEST\n\(request.debugDescription)\n---")
 		let performer = requestPerformer ?? OAuth2DataTaskRequestPerformer(session: session)
 		requestPerformer = performer
 		
 		do {
 			// TODO: add support for aborting the request, see https://www.hackingwithswift.com/quick-start/concurrency/how-to-cancel-a-task
 			let (sessData, sessResponse) = try await performer.perform(request: request)
-			self.logger?.trace("OAuth2", msg: "RESPONSE\n\(sessResponse.debugDescription)\n\n\(String(data: sessData ?? Data(), encoding: String.Encoding.utf8) ?? "no data")\n---")
+			self.logger?.trace("RESPONSE\n\(sessResponse.debugDescription)\n\n\(String(data: sessData ?? Data(), encoding: String.Encoding.utf8) ?? "no data")\n---")
 			
 			guard let response = sessResponse as? HTTPURLResponse else {
 				throw CommonError.castError(
@@ -135,7 +138,7 @@ open class OAuth2Requestable {
 			return OAuth2Response(data: sessData, request: request, response: response, error: nil)
 			
 		} catch {
-			self.logger?.trace("OAuth2", msg: "RESPONSE\nno response\n\nno data\n---")
+			self.logger?.trace("RESPONSE\nno response\n\nno data\n---")
 			
 			let http = HTTPURLResponse(url: request.url!, statusCode: 499, httpVersion: nil, headerFields: nil)!
 			return OAuth2Response(data: nil, request: request, response: http, error: error)
@@ -154,7 +157,7 @@ open class OAuth2Requestable {
 		guard let task = abortableTask else {
 			return false
 		}
-		logger?.debug("OAuth2", msg: "Aborting request")
+		logger?.debug("Aborting request")
 		task.cancel()
 		return true
 	}
@@ -175,13 +178,13 @@ open class OAuth2Requestable {
 				return json
 			}
 			if let str = String(data: data, encoding: String.Encoding.utf8) {
-				logger?.warn("OAuth2", msg: "JSON did not resolve to a dictionary, was: \(str)")
+				logger?.warning("JSON did not resolve to a dictionary, was: \(str)")
 			}
 			throw OAuth2Error.jsonParserError
 		}
 		catch let error where NSCocoaErrorDomain == error._domain && 3840 == error._code {		// JSON parser error
 			if let str = String(data: data, encoding: String.Encoding.utf8) {
-				logger?.warn("OAuth2", msg: "Unparsable JSON was: \(str)")
+				logger?.warning("Unparsable JSON was: \(str)")
 			}
 			throw OAuth2Error.jsonParserError
 		}

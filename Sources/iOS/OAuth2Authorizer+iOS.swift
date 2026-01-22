@@ -72,7 +72,7 @@ open class OAuth2Authorizer: OAuth2AuthorizerUI {
 			await UIApplication.shared.open(url) { didOpen in
 				if !didOpen {
 					Task { @OAuth2Actor in
-						self.oauth2.logger?.warn("OAuth2", msg: "Unable to open authorize URL")
+						self.oauth2.logger?.warning("Unable to open authorize URL")
 					}
 				}
 			}
@@ -148,7 +148,7 @@ open class OAuth2Authorizer: OAuth2AuthorizerUI {
 	@discardableResult
 	public func authenticationSessionEmbedded(at url: URL, withRedirect redirect: String, prefersEphemeralWebBrowserSession: Bool = false) -> Bool {
 		guard let redirectURL = URL(string: redirect) else {
-			oauth2.logger?.warn("OAuth2", msg: "Unable to parse redirect URL ”(redirect)“")
+			oauth2.logger?.warning("Unable to parse redirect URL ”(redirect)“")
 			return false
 		}
 		let completionHandler: (URL?, Error?) -> Void = { url, error in
@@ -158,7 +158,7 @@ open class OAuth2Authorizer: OAuth2AuthorizerUI {
 						try await self.oauth2.handleRedirectURL(url as URL)
 					}
 					catch {
-						self.oauth2.logger?.warn("OAuth2", msg: "Cannot intercept redirect URL: \(error)")
+						self.oauth2.logger?.warning("Cannot intercept redirect URL: \(error)")
 					}
 				}
 			} else {

@@ -19,6 +19,7 @@
 //
 
 import XCTest
+import Logging
 
 #if !NO_MODULE_IMPORT
  @testable
@@ -52,7 +53,7 @@ class OAuth2DataLoaderTests: XCTestCase {
 			"authorize_url": "https://oauth.io/authorize",
 			"keychain": false
 		] as OAuth2JSON)
-		oauth2!.logger = OAuth2DebugLogger(.debug)
+		oauth2!.logger = Logger(label: "OAuth2DataLoaderTests")
 		oauth2!.username = "p2"
 		oauth2!.password = "test"
 		oauth2!.requestPerformer = OAuth2MockPerformer(response)

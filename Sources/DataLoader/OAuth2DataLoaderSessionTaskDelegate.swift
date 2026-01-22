@@ -54,7 +54,7 @@ final class OAuth2DataLoaderSessionTaskDelegate: NSObject, URLSessionTaskDelegat
 	
 	func urlSession(_ session: URLSession, task: URLSessionTask, willPerformHTTPRedirection response: HTTPURLResponse, newRequest request: URLRequest, completionHandler: @escaping (URLRequest?) -> Void) {
 		guard request.url?.host == host else {
-			loader?.logger?.warn("OAuth2", msg: "Redirected to «\(request.url?.host ?? "nil")» but only approving HTTP redirection on «\(host)», not following redirect: \(request)")
+			loader?.logger?.warning("Redirected to «\(request.url?.host ?? "nil")» but only approving HTTP redirection on «\(host)», not following redirect: \(request)")
 			completionHandler(nil)
 			return
 		}
@@ -63,11 +63,11 @@ final class OAuth2DataLoaderSessionTaskDelegate: NSObject, URLSessionTaskDelegat
 				throw OAuth2Error.generic("no loader instance, cannot re-sign")
 			}
 			let newRequest = try request.signed(with: loader.oauth2)
-			loader.logger?.debug("OAuth2", msg: "Following HTTP redirection to «\(request.url?.description ?? "nil")»")
+			loader.logger?.debug("Following HTTP redirection to «\(request.url?.description ?? "nil")»")
 			completionHandler(newRequest)
 		}
 		catch {
-			loader?.logger?.warn("OAuth2", msg: "Failed to re-sign request after HTTP redirection: \(error)")
+			loader?.logger?.warning("Failed to re-sign request after HTTP redirection: \(error)")
 			completionHandler(request)
 		}
 	}

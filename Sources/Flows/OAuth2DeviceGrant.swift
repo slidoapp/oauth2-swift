@@ -124,7 +124,7 @@ open class OAuth2DeviceGrant: OAuth2 {
 			)
 			
 		} catch {
-			self.logger?.warn("OAuth2", msg: "Unable to get device code: \(error)") // TODO improve message to cover different scenarios
+			self.logger?.warning("Unable to get device code: \(error)") // TODO improve message to cover different scenarios
 			throw error
 		}
 	}
@@ -132,7 +132,7 @@ open class OAuth2DeviceGrant: OAuth2 {
 	private func authorizeDevice(params: OAuth2StringDict?) async throws -> OAuth2JSON {
 		do {
 			let post = try deviceAuthorizationRequest(params: params).asURLRequest(for: self)
-			logger?.debug("OAuth2", msg: "Obtaining device code from \(post.url!)")
+			logger?.debug("Obtaining device code from \(post.url!)")
 			
 			let response = await self.perform(request: post)
 			let data = try response.responseData()
@@ -147,7 +147,7 @@ open class OAuth2DeviceGrant: OAuth2 {
 	private func getDeviceAccessToken(deviceCode: String, interval: TimeInterval) async throws -> OAuth2JSON {
 		do {
 			let post = try deviceAccessTokenRequest(with: deviceCode).asURLRequest(for: self)
-			logger?.debug("OAuth2", msg: "Obtaining access token for device with code \(deviceCode) from \(post.url!)")
+			logger?.debug("Obtaining access token for device with code \(deviceCode) from \(post.url!)")
 			
 			let response = await self.perform(request: post)
 			let data = try response.responseData()
@@ -157,12 +157,12 @@ open class OAuth2DeviceGrant: OAuth2 {
 			let oaerror = error.asOAuth2Error
 			
 			if oaerror == .authorizationPending(nil) {
-				self.logger?.debug("OAuth2", msg: "AuthorizationPending, repeating in \(interval) seconds.")
+				self.logger?.debug("AuthorizationPending, repeating in \(interval) seconds.")
 				try await Task.sleep(seconds: interval)
 				return try await self.getDeviceAccessToken(deviceCode: deviceCode, interval: interval)
 			} else if oaerror == .slowDown(nil) {
 				let updatedInterval = interval + 5 // The 5 seconds increase is required by the RFC8628 standard (https://www.rfc-editor.org/rfc/rfc8628#section-3.5)
-				self.logger?.debug("OAuth2", msg: "SlowDown, repeating in \(updatedInterval) seconds.")
+				self.logger?.debug("SlowDown, repeating in \(updatedInterval) seconds.")
 				try await Task.sleep(seconds: updatedInterval)
 				return try await self.getDeviceAccessToken(deviceCode: deviceCode, interval: updatedInterval)
 			}

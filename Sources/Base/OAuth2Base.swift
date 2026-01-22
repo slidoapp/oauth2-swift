@@ -201,7 +201,7 @@ open class OAuth2Base: OAuth2Securable {
 	
 	override open func updateFromKeychainItems(_ items: [String: any Sendable]) {
 		for message in clientConfig.updateFromStorableItems(items) {
-			logger?.debug("OAuth2", msg: message)
+			logger?.debug("\(message)")
 		}
 		clientConfig.secretInBody = (clientConfig.endpointAuthMethod == OAuth2EndpointAuthMethod.clientSecretPost)
 	}
@@ -298,7 +298,7 @@ open class OAuth2Base: OAuth2Securable {
 	public final func didFail(with error: OAuth2Error?) {
 		var finalError = error
 		if let error = finalError {
-			logger?.debug("OAuth2", msg: "\(error)")
+			logger?.debug("\(error)")
 		}
 		else {
 			finalError = OAuth2Error.requestCancelled
@@ -319,7 +319,7 @@ open class OAuth2Base: OAuth2Securable {
 	*/
 	open func abortAuthorization() {
 		if !abortTask() {
-			logger?.debug("OAuth2", msg: "Aborting authorization")
+			logger?.debug("Aborting authorization")
 			didFail(with: nil)
 		}
 	}
@@ -472,7 +472,7 @@ open class OAuth2Base: OAuth2Securable {
 		guard let state = params["state"] as? String, !state.isEmpty else {
 			throw OAuth2Error.missingState
 		}
-		logger?.trace("OAuth2", msg: "Checking state, got “\(state)”, expecting “\(context.state)”")
+		logger?.trace("Checking state, got “\(state)”, expecting “\(context.state)”")
 		if !context.matchesState(state) {
 			throw OAuth2Error.invalidState
 		}
