@@ -11,6 +11,15 @@
         }
       },
       {
+        "package": "swift-log",
+        "repositoryURL": "https://github.com/apple/swift-log.git",
+        "state": {
+          "branch": null,
+          "revision": "a878e7f8f46cfc0e1125e565b5c08e7d5272dc9a",
+          "version": "1.14.0"
+        }
+      },
+      {
         "package": "SwiftKeychain",
         "repositoryURL": "https://github.com/slidoapp/SwiftKeychain.git",
         "state": {

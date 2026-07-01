@@ -32,7 +32,7 @@ let package = Package(
 	dependencies: [
 		.package(url: "https://github.com/slidoapp/SwiftKeychain.git", .upToNextMinor(from: "2.1.0")),
 		.package(url: "https://github.com/groue/Semaphore.git", .upToNextMinor(from: "0.1.0")),
-		.package(url: "https://github.com/apple/swift-log.git", .upToNextMinor(from: "1.6.4"))
+		.package(url: "https://github.com/apple/swift-log.git", .upToNextMajor(from: "1.14.0"))
 	],
 	targets: [
 		.target(name: "OAuth2",
