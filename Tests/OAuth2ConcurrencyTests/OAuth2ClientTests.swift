@@ -773,6 +773,7 @@ private actor RefreshTransport: OAuth2Transport {
 private actor CancellationAwareRefreshTransport: OAuth2Transport {
 	private(set) var refreshCount = 0
 	private(set) var cancellationCount = 0
+	private var responseContinuation: CheckedContinuation<OAuth2HTTPResponse, any Error>?
 	private var startedWaiters = [CheckedContinuation<Void, Never>]()
 
 	func data(for request: URLRequest) async throws -> OAuth2HTTPResponse {
@@ -782,13 +783,20 @@ private actor CancellationAwareRefreshTransport: OAuth2Transport {
 		for waiter in waiters {
 			waiter.resume()
 		}
-		do {
-			try await Task.sleep(nanoseconds: UInt64.max)
-			return .tokenSuccess
-		}
-		catch {
-			cancellationCount += 1
-			throw error
+		return try await withTaskCancellationHandler {
+			try await withCheckedThrowingContinuation { continuation in
+				if Task.isCancelled {
+					cancellationCount += 1
+					continuation.resume(throwing: CancellationError())
+				}
+				else {
+					responseContinuation = continuation
+				}
+			}
+		} onCancel: {
+			Task {
+				await self.cancelRequest()
+			}
 		}
 	}
 
@@ -797,6 +805,13 @@ private actor CancellationAwareRefreshTransport: OAuth2Transport {
 		await withCheckedContinuation { continuation in
 			startedWaiters.append(continuation)
 		}
+	}
+
+	private func cancelRequest() {
+		guard let responseContinuation else { return }
+		self.responseContinuation = nil
+		cancellationCount += 1
+		responseContinuation.resume(throwing: CancellationError())
 	}
 }
 
