@@ -7,7 +7,6 @@ on:
 
 permissions:
   contents: read
-  checks: write
 
 jobs:
   build-swift:
@@ -54,38 +53,14 @@ jobs:
 
     - name: run unit tests
       run: >
-        mkdir -p reports &&
-        swift test
-        --xunit-output 'reports/TestReport.xml'
-        -Xswiftc -swift-version
-        -Xswiftc '${{ matrix.language-mode }}'
-        -Xswiftc -warnings-as-errors
-  
-    - name: report unit test results
-      uses: dorny/test-reporter@eaa763f6ffc21c7a37837f56cd5f9737f27fc6c8
-      if: always()
-      id: results-swift-tests
-      with:
-        name: 'results-swift-tests-${{ matrix.swift }}'
-        path: 'reports/TestReport.xml'
-        reporter: swift-xunit
-        fail-on-error: true
-
-    - name: summary
-      if: always()
-      run: |
-        {
-          echo "# Test Summary Report"
-          echo ""
-          echo "System details"
-          echo ""
-          echo "Swift: \`${{ matrix.swift }}\`  "
-          echo "macOS: \`${{ matrix.macos }}\`  "
-          echo "Xcode: \`${{ matrix.xcode-path }}\` "
-          echo ""
-          echo "Unit Tests Conclusion: \`${{ steps.results-swift-tests.outputs.conclusion }}\`  "
-          echo "Unit Tests Report: <${{ steps.results-swift-tests.outputs.url_html }}>"
-        } >> $GITHUB_STEP_SUMMARY
+        xcodebuild
+        -workspace '.swiftpm/xcode/package.xcworkspace'
+        -scheme OAuth2
+        -configuration Debug
+        -destination 'platform=macOS'
+        SWIFT_VERSION='${{ matrix.language-mode }}'
+        SWIFT_TREAT_WARNINGS_AS_ERRORS=YES
+        test
 
   build-xcode:
     name: 'build-xcode (${{ matrix.platform }})'
