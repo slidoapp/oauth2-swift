@@ -1,4 +1,4 @@
-// swift-tools-version:5.5
+// swift-tools-version:5.10
 //
 //  Package.swift
 //  OAuth2
@@ -21,33 +21,22 @@
 
 import PackageDescription
 
+let strictConcurrency: [SwiftSetting] = [
+	.enableExperimentalFeature("StrictConcurrency"),
+]
+
 let package = Package(
 	name: "OAuth2",
 	platforms: [
-		.macOS(.v10_15), .iOS(.v13), .tvOS(.v13), .watchOS(.v6)
+		.macOS(.v12), .iOS(.v15), .tvOS(.v15), .watchOS(.v8)
 	],
 	products: [
 		.library(name: "OAuth2", targets: ["OAuth2"]),
 	],
-	dependencies: [
-		.package(url: "https://github.com/slidoapp/SwiftKeychain.git", .upToNextMinor(from: "2.1.0")),
-		.package(url: "https://github.com/groue/Semaphore.git", .upToNextMinor(from: "0.1.0")),
-		.package(url: "https://github.com/apple/swift-log.git", .upToNextMinor(from: "1.6.4"))
-	],
+	dependencies: [],
 	targets: [
-		.target(name: "OAuth2",
-			dependencies: ["Base", "Flows", "DataLoader"]),
-		.target(name: "Base", dependencies: ["SwiftKeychain", "Semaphore", .product(name: "Logging", package: "swift-log")]),
-		.target(name: "macOS", dependencies: [.target(name: "Base")]),
-		.target(name: "iOS", dependencies: [.target(name: "Base")]),
-		.target(name: "tvOS", dependencies: [.target(name: "Base")]),
-		.target(name: "Constants"),
-		.target(name: "Flows", dependencies: [
-			.target(name: "macOS"), .target(name: "iOS"), .target(name: "tvOS"), .target(name: "Constants")]),
-		.target(name: "DataLoader", dependencies: [.target(name: "Flows")]),
-		.target(name: "TestUtils", dependencies: [.target(name: "Base")]),
-		.testTarget(name: "BaseTests", dependencies: [.target(name: "TestUtils"), .target(name: "Base"), .target(name: "Flows")]),
-		.testTarget(name: "FlowTests", dependencies: [.target(name: "TestUtils"), .target(name: "Flows")]),
-//		.testTarget(name: "DataLoaderTests", dependencies: [.target(name: "DataLoader")]),
-	]
+		.target(name: "OAuth2", swiftSettings: strictConcurrency),
+		.testTarget(name: "OAuth2ConcurrencyTests", dependencies: [.target(name: "OAuth2")], swiftSettings: strictConcurrency),
+	],
+	swiftLanguageVersions: [.v5]
 )

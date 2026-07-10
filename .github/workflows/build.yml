@@ -14,13 +14,19 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        swift: ['swift6', 'swift5']
+        swift: ['swift5.10', 'swift5-newer-compiler', 'swift6']
         include:
-          - swift: 'swift6'
+          - swift: 'swift5.10'
+            language-mode: '5'
+            xcode-path: '/Applications/Xcode_15.4.app'
+            macos: 'macos-14'
+          - swift: 'swift5-newer-compiler'
+            language-mode: '5'
             xcode-path: '/Applications/Xcode_16.2.app'
             macos: 'macos-14'
-          - swift: 'swift5'
-            xcode-path: '/Applications/Xcode_15.4.app'
+          - swift: 'swift6'
+            language-mode: '6'
+            xcode-path: '/Applications/Xcode_16.2.app'
             macos: 'macos-14'
     
     env:
@@ -37,14 +43,23 @@ jobs:
     - name: swift version
       run: swift --version
 
-    - name: build
-      run: swift build -v
+    - name: build with complete concurrency checking
+      run: >
+        swift build
+        --target OAuth2
+        -Xswiftc -swift-version
+        -Xswiftc '${{ matrix.language-mode }}'
+        -Xswiftc -warnings-as-errors
 
     - name: run unit tests
-      continue-on-error: true
-      run: |
-        mkdir reports
-        swift test --parallel --xunit-output 'reports/TestReport.xml'
+      run: >
+        mkdir -p reports &&
+        swift test
+        --parallel
+        --xunit-output 'reports/TestReport.xml'
+        -Xswiftc -swift-version
+        -Xswiftc '${{ matrix.language-mode }}'
+        -Xswiftc -warnings-as-errors
   
     - name: report unit test results
       uses: dorny/test-reporter@eaa763f6ffc21c7a37837f56cd5f9737f27fc6c8
@@ -79,18 +94,10 @@ jobs:
       fail-fast: false
       matrix:
         macos: [ 'macos-14' ]
-        platform: [ 'macOS', 'iOS', 'tvOS' ]
-        include:
-          - platform: 'macOS'
-            scheme: 'OAuth2macOS'
-          - platform: 'iOS'
-            scheme: 'OAuth2iOS'
-          - platform: 'tvOS'
-            scheme: 'OAuth2tvOS'
+        platform: [ 'macOS', 'iOS', 'tvOS', 'watchOS' ]
     
     env:
-      DEVELOPER_DIR: '/Applications/Xcode_15.4.0.app'
-      TEST_RESULTS_PATH: 'OAuth2Tests_${{ matrix.platform }}_run${{ github.run_number }}.xcresult'
+      DEVELOPER_DIR: '/Applications/Xcode_15.4.app'
 
     runs-on: ${{ matrix.macos }}
 
@@ -109,27 +116,9 @@ jobs:
     - name: build
       run: >
         xcodebuild
-        -scheme '${{ matrix.scheme }}'
+        -workspace '.swiftpm/xcode/package.xcworkspace'
+        -scheme OAuth2
         -configuration Debug
-        -destination 'platform=${{ matrix.platform }}'
+        -destination 'generic/platform=${{ matrix.platform }}'
         -showBuildTimingSummary
         build
-
-    - name: test
-      if: success()
-      continue-on-error: true
-      run: >
-        xcodebuild
-        -scheme '${{ matrix.scheme }}'
-        -configuration Debug
-        -destination 'platform=${{ matrix.platform }}'
-        -resultBundlePath ${{ env.TEST_RESULTS_PATH }}
-        test
-
-    - name: run xcresulttool
-      uses: slidoapp/xcresulttool@v2.0.0
-      if: always()
-      with:
-        title: 'results-xcode-tests-${{ matrix.platform }}'
-        path: ${{ env.TEST_RESULTS_PATH }}
-        upload-bundles: true

@@ -4,6 +4,15 @@ Changelog
 Version numbering represents the Swift version, plus a running number representing updates, fixes and new features at the same time.
 You can also refer to commit logs to get details on what was implemented, fixed and improved.
 
+#### Unreleased — PS-22014
+
+- Require Swift 5.10 and complete strict-concurrency checking.
+- Replace the callback and subclass API with the async/await `OAuth2Client` actor and `OAuth2ResourceClient`.
+- Isolate interactive authorization to `MainActor` while keeping token, persistence, and resource work background-safe.
+- Add cancellation-aware single-flight refresh and authorization, serialized rotating token mutations, and revision-aware 401 recovery.
+- Replace `SwiftKeychain` with a queue-isolated Security framework credential store and remove the semaphore and logging dependencies.
+- Make Swift Package Manager the only supported package definition and continuously test Swift 5 and Swift 6 language modes.
+
 #### 5.4.0-slido
 - Add the device authorization grant flow [PS-17876](https://sli-do.atlassian.net/browse/PS-17876)
 
