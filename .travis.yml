@@ -1,7 +1,0 @@
-language:      swift
-osx_image:     xcode12.3
-xcode_project: OAuth2.xcodeproj
-xcode_scheme:  OAuth2macOS
-xcode_sdk:     macosx
-script:
-- travis_wait xcodebuild

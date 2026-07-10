@@ -1,569 +1,204 @@
-OAuth2
-======
+# OAuth2
 
-[![Build Status](https://travis-ci.org/p2/OAuth2.svg?branch=main)](https://travis-ci.org/p2/OAuth2)
-[![License](https://img.shields.io/:license-apache-blue.svg)](LICENSE.txt)
+OAuth2 is an async/await OAuth client for Apple platforms. Its mutable state is isolated per configured client, while networking remains safe to call from background tasks and user-interface presentation is isolated to `MainActor`.
 
-OAuth2 frameworks for **macOS**, **iOS** and **tvOS** written in Swift 5.
+## Requirements
 
-- [⤵️ Installation](#installation)
-- [🛠 Usage](#usage)
-- [🖥 Sample macOS app][sample] (with data loader examples)
-- [📖 Technical Documentation](https://p2.github.io/OAuth2)
+- Swift 5.10 or newer
+- Complete strict-concurrency checking
+- macOS 12+, iOS 15+, tvOS 15+, or watchOS 8+
 
-OAuth2 requires Xcode 12.4, the built framework can be used on **OS X 10.15**, **iOS 13**, **tvOS 13**, **watchOS 6** and later.
-Happy to accept pull requests, please see [CONTRIBUTING.md](./Docs/CONTRIBUTING.md)
+The package currently uses Swift 5 language mode so projects can migrate incrementally. The same public module is continuously compiled in Swift 6 language mode.
 
-### Swift Version
+## Installation
 
-Since the Swift language is constantly evolving I have adopted a versioning scheme mirroring Swift versions:
-the framework version's **first two digits are always the Swift version** the library is compatible with, see [releases](https://github.com/p2/OAuth2/releases).
-Code compatible with brand new Swift versions are to be found on a separate feature branch named appropriately.
-
-
-Usage
------
-
-To use OAuth2 in your own code, start with `import OAuth2` in your source files.
-
-In OAuth2 there are [**different kinds of _flows_**](https://tools.ietf.org/html/rfc6749#page-2).
-This library supports all of them, make sure you're using the correct one for your use-case and authorization server.
-A typical **code grant flow** is used for demo purposes below.
-The steps for other flows are mostly the same short of instantiating a different subclass and using different client settings.
-
-Still not working?
-See [site-specific peculiarities](#site-specific-peculiarities).
-
-### 1. Instantiate OAuth2 with a Settings Dictionary
-
-In this example you'll be building an iOS client to Github, so the code below will be somewhere in a view controller of yours, _maybe_ the app delegate.
+Add the package with Swift Package Manager and import its single library product:
 
 ```swift
-let oauth2 = OAuth2CodeGrant(settings: [
-    "client_id": "my_swift_app",
-    "client_secret": "C7447242",
-    "authorize_uri": "https://github.com/login/oauth/authorize",
-    "token_uri": "https://github.com/login/oauth/access_token",   // code grant only
-    "redirect_uris": ["myapp://oauth/callback"],   // register your own "myapp" scheme in Info.plist
-    "scope": "user repo:status",
-    "secret_in_body": true,    // Github needs this
-    "keychain": false,         // if you DON'T want keychain integration
-] as OAuth2JSON)
+import OAuth2
 ```
 
-See those `redirect_uris`?
-You can use the scheme you want, but you must **a)** declare the scheme you use in your `Info.plist` and **b)** register the very same URI on the authorization server you connect to.
+## Create a client
 
-Note that **as of iOS 9**, you _should_ use [Universal Links](https://developer.apple.com/library/content/documentation/General/Conceptual/AppSearch/UniversalLinks.html) as your redirect URL, rather than a custom app scheme.
-This prevents others from re-using your URI scheme and intercept the authorization flow.  
-If you **target iOS 12 and newer** you should be using `ASWebAuthenticationSession`, which makes using your own local redirect scheme secure.
-
-Want to avoid switching to Safari and pop up a SafariViewController or NSPanel?
-Set this:
+Configuration is immutable and `Sendable`. Runtime credentials and tokens belong to one `OAuth2Client` actor.
 
 ```swift
-oauth2.authConfig.authorizeEmbedded = true
-oauth2.authConfig.authorizeContext = <# your UIViewController / NSWindow #>
+let configuration = OAuth2ClientConfiguration(
+	authorizationEndpoint: URL(string: "https://accounts.example.com/authorize")!,
+	tokenEndpoint: URL(string: "https://accounts.example.com/token")!,
+	redirectURI: URL(string: "myapp://oauth/callback")!,
+	scopes: ["openid", "profile"],
+	clientAuthentication: .none,
+	usesPKCE: true
+)
+
+let credentialStore = OAuth2KeychainCredentialStore(
+	configuration: OAuth2KeychainConfiguration(
+		service: "com.example.myapp.oauth"
+	)
+)
+
+let client = OAuth2Client(
+	configuration: configuration,
+	clientCredentials: OAuth2ClientCredentials(clientID: "my-client"),
+	credentialStore: credentialStore
+)
 ```
 
-Need to specify a separate refresh token URI? You can set the `refresh_uri` in the Settings Dictionary. If specified the library will refresh access tokens using the `refresh_uri` you specified, otherwise it will use the `token_uri`.
+`OAuth2KeychainCredentialStore` executes synchronous Security framework calls on its own serial queue. For ephemeral clients and tests, use `InMemoryOAuth2CredentialStore`.
 
-Need to debug? Use a `.debug` or even a `.trace` logger:
+## Headless access from background work
 
-```swift
-oauth2.logger?.logLevel = .trace
-```
-
-For more see [advanced settings](#advanced-settings) below.
-
-
-### 2. Let the Data Loader or Alamofire Take Over
-
-Starting with version 3.0, there is an `OAuth2DataLoader` class that you can use to retrieve data from an API.
-It will automatically start authorization if needed and will ensure that this works even if you have multiple calls going on.
-For details on how to configure authorization see step 4 below, in this example we'll use "embedded" authorization, meaning we'll show a SFSafariViewController on iOS if the user needs to log in.
-
-[This wiki page has all you need](https://github.com/p2/OAuth2/wiki/Alamofire-5) to easily use OAuth2 with Alamofire instead.
+`validAccessToken()` checks memory and persisted state, then coalesces concurrent refresh attempts. It never presents user interface.
 
 ```swift
-let base = URL(string: "https://api.github.com")!
-let url = base.appendingPathComponent("user")
-
-var req = oauth2.request(forURL: url)
-req.setValue("application/vnd.github.v3+json", forHTTPHeaderField: "Accept")
-
-self.loader = OAuth2DataLoader(oauth2: oauth2)
-loader.perform(request: req) { response in
-    do {
-        let dict = try response.responseJSON()
-        DispatchQueue.main.async {
-            // you have received `dict` JSON data!
-        }
-    }
-    catch let error {
-        DispatchQueue.main.async {
-            // an error occurred
-        }
-    }
+do {
+	let snapshot = try await client.validAccessToken()
+	print(snapshot.tokenSet.accessToken)
+}
+catch OAuth2ClientError.interactiveAuthorizationRequired {
+	// Schedule an explicit interactive authorization at an appropriate time.
 }
 ```
 
-### 3. Make Sure You Intercept the Callback
+If one hundred background tasks request an expired token concurrently, they await one refresh operation. Cancelling one waiter does not cancel work still required by other waiters.
 
-When using the OS browser or the iOS 9+ Safari view controller, you will need to **intercept the callback** in your app delegate and let the OAuth2 instance handle the full URL:
+## Interactive authorization
+
+Interactive authorization takes an explicit `MainActor` presenter. Calling the client from a background task does not move token exchange, persistence, or later resource requests onto the main actor.
 
 ```swift
-func application(_ app: UIApplication,
-              open url: URL,
-               options: [UIApplicationOpenURLOptionsKey: Any] = [:]) -> Bool {
-    // you should probably first check if this is the callback being opened
-    if <# check #> {
-        // if your oauth2 instance lives somewhere else, adapt accordingly
-        oauth2.handleRedirectURL(url)
-    }
+import AuthenticationServices
+
+@MainActor
+func makePresenter(window: ASPresentationAnchor) -> OAuth2AuthenticationSessionPresenter {
+	OAuth2AuthenticationSessionPresenter(presentationAnchor: window)
+}
+
+let presenter = await makePresenter(window: window)
+let snapshot = try await client.authorize(using: presenter)
+```
+
+`OAuth2AuthenticationSessionPresenter` owns its `ASWebAuthenticationSession` and presentation anchor on `MainActor`. Success, provider failure, user cancellation, and explicit cancellation resolve the async call exactly once.
+
+To cancel the shared interactive operation:
+
+```swift
+await client.cancelAuthorization()
+```
+
+## Protected resource requests
+
+`OAuth2ResourceClient` performs independent requests concurrently. A 401 invalidates only the token revision used by that request, coalesces headless recovery, and makes one recovery attempt. It never starts interactive authorization.
+
+```swift
+let resources = OAuth2ResourceClient(client: client)
+let request = URLRequest(url: URL(string: "https://api.example.com/profile")!)
+let response = try await resources.data(for: request)
+
+let profile = try JSONDecoder().decode(Profile.self, from: response.data)
+await MainActor.run {
+	viewModel.profile = profile
 }
 ```
 
-For iOS 13 make the callback in `SceneDelegate.swift`
+A second 401 is returned as `OAuth2ClientError.unauthorized`; requests cannot enter an unbounded retry loop.
+
+## Device authorization
+
+Device authorization exposes both phases as structured, cancellable operations. It does not create a fire-and-forget polling task.
 
 ```swift
-func scene(_ scene: UIScene, openURLContexts URLContexts: Set<UIOpenURLContext>) {
-	if let url = URLContexts.first?.url {
-		AppDelegate.shared.oauth2?.handleRedirectURL(url)
-	}
-}
+let authorization = try await client.beginDeviceAuthorization()
+
+print(authorization.userCode)
+print(authorization.verificationURI)
+
+let snapshot = try await client.pollForDeviceAuthorization(authorization)
 ```
 
-You’re all set!
+Polling implements `authorization_pending`, the RFC 8628 five-second `slow_down` increase, local expiry, server expiry, and task cancellation.
 
----
+## Other grants and extensions
 
-If you want to dig deeper or do authorization yourself, here it goes:
-
-### 4. Manually Authorize the User
-
-By default the OS browser will be used for authorization if there is no access token present or in the keychain.
-**Starting with iOS 12**, `ASWebAuthenticationSession` will be used when enabling embedded authorization on iOS (previously, starting with iOS 9, `SFSafariViewController` was used instead).
-
-To start authorization call **`authorize(params:callback:)`** or, to use embedded authorization, the convenience method `authorizeEmbedded(from:callback:)`.
-
-The login screen will only be **presented if needed** (see [_Manually Performing Authorization](#manually-performing-authorization) below for details) and will automatically **dismiss** the login screen on success.
-See [_Advanced Settings_](#advanced-settings) for other options.
-
+The actor also provides async methods for existing supported behavior:
 
 ```swift
-oauth2.authorize() { authParameters, error in
-    if let params = authParameters {
-        print("Authorized! Access token is in `oauth2.accessToken`")
-        print("Authorized! Additional parameters: \(params)")
-    }
-    else {
-        print("Authorization was canceled or went wrong: \(error)")   // error will not be nil
-    }
-}
+let clientToken = try await client.authorizeWithClientCredentials()
 
-// for embedded authorization you can simply use:
-oauth2.authorizeEmbedded(from: <# presenting view controller / window #>) { ... }
+let passwordToken = try await client.authorizeWithPassword(
+	username: username,
+	password: password
+)
 
-// which is equivalent to:
-oauth2.authConfig.authorizeEmbedded = true
-oauth2.authConfig.authorizeContext = <# presenting view controller / window #>
-oauth2.authorize() { ... }
+let implicitToken = try await client.authorizeImplicit(using: presenter)
+
+let audienceRefreshToken = try await client.exchangeRefreshToken(
+	forAudience: "audience-client-id"
+)
+
+let resourceToken = try await client.exchangeAccessToken(
+	forResources: ["https://api.example.com"]
+)
 ```
 
-Don't forget, when using the OS browser or the iOS 9+ Safari view controller, you will need to **intercept the callback** in your app delegate.
-This is shown under step 2 above.
+Client credentials, refreshes, code exchanges, device exchanges, and token exchanges share a cancellation-aware mutation gate. Providers that rotate refresh tokens therefore cannot receive the same subject token from concurrent operations.
 
-See [_Manually Performing Authorization_](#manually-performing-authorization) below for details on how to do this on the Mac.
-
-### 5. Receive Callback
-
-After everything completes the callback will be called, **either** with a non-nil _authParameters_ dictionary (which may be empty!), **or** an error.
-The access and refresh tokens and its expiration dates will already have been extracted and are available as `oauth2.accessToken` and `oauth2.refreshToken` parameters.
-You only need to inspect the _authParameters_ dictionary if you wish to extract additional information.
-
-For advanced use outlined below, there is the `afterAuthorizeOrFail` block that you can use on your OAuth2 instance.
-The `internalAfterAuthorizeOrFail` closure is, as its name suggests, provided for internal purposes – it is exposed for subclassing and compilation reasons and you should not mess with it.
-As of version 3.0.2, you can no longer use the `onAuthorize` and `onFailure` callback properties, they have been removed entirely.
-
-### 6. Make Requests
-
-You can now obtain an `OAuth2Request`, which is an already signed `MutableURLRequest`, to retrieve data from your server.
-This request sets the _Authorization_ header using the access token like so: `Authorization: Bearer {your access token}`.
+Dynamic client registration stores returned credentials as actor-owned runtime state:
 
 ```swift
-let req = oauth2.request(forURL: <# resource URL #>)
-// set up your request, e.g. `req.HTTPMethod = "POST"`
-let task = oauth2.session.dataTaskWithRequest(req) { data, response, error in
-    if let error = error {
-        // something went wrong, check the error
-    }
-    else {
-        // check the response and the data
-        // you have just received data with an OAuth2-signed request!
-    }
-}
-task.resume()
+let registration = try await client.registerClient(
+	OAuth2ClientRegistration(
+		clientName: "My App",
+		redirectURIs: [URL(string: "myapp://oauth/callback")!]
+	)
+)
 ```
 
-Of course you can use your own `URLSession` with these requests, you don't have to use `oauth2.session`; use [OAuth2DataLoader](https://github.com/p2/OAuth2/blob/main/Sources/Base/OAuth2DataLoader.swift), as shown in step 2, or hand it over to _Alamofire_.
-[Here's all you need](https://github.com/p2/OAuth2/wiki/Alamofire-4) to easily use OAuth2 with Alamofire.
+Provider variations are configuration rather than subclasses:
 
-### 7. Cancel Authorization
+- `additionalAuthorizationParameters` and `additionalTokenParameters`
+- custom `tokenAuthorizationHeader`
+- JSON or form-URL-encoded token responses
+- optional missing `token_type`
+- implicit responses in the fragment or query
+- custom client-credentials grant types and parameters
 
-You can cancel an ongoing authorization any time by calling `oauth2.abortAuthorization()`.
-This will cancel ongoing requests (like a code exchange request) or call the callback while you're waiting for a user to login on a webpage.
-The latter will dismiss embedded login screens or redirect the user back to the app.
+Unknown response fields are retained as `JSONValue` values.
 
-### 8. Re-Authorize
+## Testing
 
-It is safe to always call `oauth2.authorize()` before performing a request.
-You can also perform the authorization before the first request after your app became active again.
-Or you can always intercept 401s in your requests and call authorize again before re-attempting the request.
+The principal boundaries are injectable and `Sendable`:
 
-### 9. Logout
+- `OAuth2Transport`
+- `OAuth2CredentialStore`
+- `OAuth2Clock`
+- `OAuth2Sleeper`
+- `OAuth2Randomness`
+- `OAuth2AuthorizationPresenter`
 
-If you're storing tokens to the keychain, you can call `forgetTokens()` to throw them away.
+This makes refresh storms, cancellation, token rotation, device polling, and actor reentrancy deterministic in unit tests.
 
-**However** your user is likely still logged in to the website, so on the next `authorize()` call, the web view may appear and immediately disappear.
-When using the built-in web view on iOS 8, one can use the following snippet to throw away any cookies the app created.
-With the newer `SFSafariViewController`, or logins performed in the browser, it's probably best to directly **open the logout page** so the user sees the logout happen.
+Run the package tests:
 
-```swift
-let storage = HTTPCookieStorage.shared
-storage.cookies?.forEach() { storage.deleteCookie($0) }
+```shell
+swift test
 ```
 
+Compile the public module and its tests in Swift 6 language mode:
 
-Manually Performing Authorization
----------------------------------
+```shell
+swift build --target OAuth2 \
+	-Xswiftc -swift-version -Xswiftc 6 \
+	-Xswiftc -warnings-as-errors
 
-The `authorize(params:callback:)` method will:
-
-1. Check if an authorize call is already running, if yes it will abort with an `OAuth2Error.alreadyAuthorizing` error
-2. Check if an access token that has not yet expired is already present (or in the keychain), if not
-3. Check if a refresh token is available, if found
-4. Try to use the refresh token to get a new access token, if it fails
-5. Start the OAuth2 dance by using the `authConfig` settings to determine how to display an authorize screen to the user
-
-Your `oauth2` instance will use an automatically created `URLSession` using an `ephemeralSessionConfiguration()` configuration for its requests, exposed on `oauth2.session`.
-You can set `oauth2.sessionConfiguration` to your own configuration, for example if you'd like to change timeout values.
-You can also set `oauth2.sessionDelegate` to your own session delegate if you like.
-
-The wiki has [the complete call graph](https://github.com/p2/OAuth2/wiki/Call-Graph) of the _authorize()_ method.
-If you do **not wish this kind of automation**, the manual steps to show and hide the authorize screens are:
-
-**Embedded iOS**:
-
-```swift
-let url = try oauth2.authorizeURL(params: <# custom parameters or nil #>)
-oauth2.authConfig.authorizeEmbeddedAutoDismiss = false
-let web = try oauth2.authorizer.authorizeSafariEmbedded(from: <# view controller #>, at: url)
-oauth2.afterAuthorizeOrFail = { authParameters, error in
-    // inspect error or oauth2.accessToken / authParameters or do something else
-    web.dismissViewControllerAnimated(true, completion: nil)
-}
+swift build --target OAuth2ConcurrencyTests \
+	-Xswiftc -swift-version -Xswiftc 6 \
+	-Xswiftc -warnings-as-errors
 ```
 
-**Modal Sheet on macOS**:
+The detailed architecture, migration phases, and acceptance gates are in [Docs/ASYNC_AWAIT_MIGRATION.md](Docs/ASYNC_AWAIT_MIGRATION.md).
 
-```swift
-let window = <# window to present from #>
-let url = try oauth2.authorizeURL(params: <# custom parameters or nil #>)
-let sheet = try oauth2.authorizer.authorizeEmbedded(from: window, at: url)
-oauth2.afterAuthorizeOrFail = { authParameters, error in
-    // inspect error or oauth2.accessToken / authParameters or do something else
-    window.endSheet(sheet)
-}
-```
+## License
 
-**New window on macOS**:
-
-```swift
-let url = try oauth2.authorizeURL(params: <# custom parameters or nil #>)
-let windowController = try oauth2.authorizer.authorizeInNewWindow(at: url)
-oauth2.afterAuthorizeOrFail = { authParameters, error in
-    // inspect error or oauth2.accessToken / authParameters or do something else
-    windowController.window?.close()
-}
-```
-
-**iOS/macOS browser**:
-
-```swift
-let url = try oauth2.authorizeURL(params: <# custom parameters or nil #>)
-try oauth2.authorizer.openAuthorizeURLInBrowser(url)
-oauth2.afterAuthorizeOrFail = { authParameters, error in
-    // inspect error or oauth2.accessToken / authParameters or do something else
-}
-```
-
-
-**macOS**
-
-See the [OAuth2 Sample App][sample]'s AppDelegate class on how to receive the callback URL in your Mac app.
-If the authorization displays the code to the user, e.g. with Google's `urn:ietf:wg:oauth:2.0:oob` callback URL, you can retrieve the code from the user's pasteboard and continue authorization with:
-
-```swift
-let pboard = NSPasteboard.general()
-if let pasted = pboard.string(forType: NSPasteboardTypeString) {
-    oauth2.exchangeCodeForToken(pasted)
-}
-```
-
-
-Flows
------
-
-Based on which OAuth2 flow that you need you will want to use the correct subclass.
-For a very nice explanation of OAuth's basics: [The OAuth Bible](http://oauthbible.com/#oauth-2-three-legged).
-
-#### Code Grant
-
-For a full OAuth 2 code grant flow (`response_type=code`) you want to use the `OAuth2CodeGrant` class.
-This flow is typically used by applications that can guard their secrets, like server-side apps, and not in distributed binaries.
-In case an application cannot guard its secret, such as a distributed iOS app, you would use the _implicit grant_ or, in some cases, still a _code grant_ but omitting the client secret.
-It has however become common practice to still use code grants from mobile devices, including a client secret.
-
-This class fully supports those flows, it automatically creates a “Basic” Authorization header if the client has a non-nil client secret.
-This means that you likely **must** specify `client_secret` in your settings; if there is none (like for [Reddit](https://github.com/reddit/reddit/wiki/OAuth2#token-retrieval-code-flow)) specify the empty string.
-If the site requires client credentials in the request body, set `clientConfig.secretInBody` to true, as explained below.
-
-#### Implicit Grant
-
-An implicit grant (`response_type=token`) is suitable for apps that are not capable of guarding their secret, such as distributed binaries or client-side web apps.
-Use the `OAuth2ImplicitGrant` class to receive a token and perform requests.
-
-Would be nice to add another code example here, but it's pretty much the same as for the _code grant_.
-
-#### Client Credentials
-
-A 2-legged flow that lets an app authorize itself via its client id and secret.
-Instantiate `OAuth2ClientCredentials`, as usual supplying `client_id` but also a `client_secret` – plus your other configurations – in the settings dict, and you should be good to go.
-
-#### Username and Password
-
-The _Resource Owner Password Credentials Grant_ is supported with the `OAuth2PasswordGrant` subclass.
-Create an instance as shown above, set its `username` and `password` properties, then call `authorize()`.
-
-### Device Grant
-
-The [OAuth 2.0 Device Authorization Grant](https://datatracker.ietf.org/doc/html/rfc8628) flow is implemented in the `OAuth2DeviceGrant` subclass.
-Although this flow is designed for devices that either lack a browser to perform a user-agent-based authorization or are input constrained, it is also very useful for applications not allowed to [start their own webserver (loopback URL) or register a custom URL scheme](https://www.oauth.com/oauth2-servers/redirect-uris/redirect-uris-native-apps/) to finish the authorization code grant flow.
-To initiate the device grant flow, the `deviceAuthorizeURL` needs to be correctly configured to point towards the device authorization endpoint. By calling the `OAuth2DeviceGrant.start(useNonTextualTransmission:params:completion:)` method, the client obtains [all necessary details](https://datatracker.ietf.org/doc/html/rfc8628#section-3.2) to complete the authorization on a secondary device or in the system browser.
-
-
-
-Site-Specific Peculiarities
----------------------------
-
-Some sites might not strictly adhere to the OAuth2 flow, from returning data differently like Facebook to omitting mandatory return parameters like Instagram & co.
-The framework deals with those deviations by creating site-specific subclasses and/or configuration details.
-If you need to pass additional **headers** or **parameters**, you can supply these in the settings dict like so:
-
-```swift
-let oauth2 = OAuth2CodeGrant(settings: [
-    "client_id": "...",
-    ...
-    "headers": ["Accept": "application/vnd.github.v3+json"],
-    "parameters": ["duration": "permanent"],
-] as OAuth2JSON)
-```
-
-- [GitHub](https://github.com/p2/OAuth2/wiki/GitHub)
-- [Facebook](https://github.com/p2/OAuth2/wiki/Facebook)
-- [Reddit](https://github.com/p2/OAuth2/wiki/Reddit)
-- [Google](https://github.com/p2/OAuth2/wiki/Google)
-- [Instagram, Bitly, Pinterest, ...](https://github.com/p2/OAuth2/wiki/Instagram,-Bitly,-Pinterest-and-others)
-- [Uber](https://github.com/p2/OAuth2/wiki/Uber)
-- [BitBucket](https://github.com/p2/OAuth2/wiki/BitBucket)
-
-
-Advanced Settings
------------------
-
-The main configuration you'll use with `oauth2.authConfig` is whether or not to use an embedded login:
-
-    oauth2.authConfig.authorizeEmbedded = true
-
-Similarly, if you want to take care of dismissing the login screen yourself (not possible with the newer authorization sessions mentioned below):
-
-    oauth2.authConfig.authorizeEmbeddedAutoDismiss = false
-
-Some sites also want the client-id/secret combination in the request _body_, not in the _Authorization_ header:
-
-    oauth2.clientConfig.secretInBody = true
-    // or in your settings:
-    "secret_in_body": true
-
-Sometimes you also need to provide additional authorization parameters.
-This can be done in 3 ways:
-
-    oauth2.authParameters = ["duration": "permanent"]
-    // or in your settings:
-    "parameters": ["duration": "permanent"]
-    // or when you authorize manually:
-    oauth2.authorize(params: ["duration": "permanent"]) { ... }
-
-Similar is how you specify custom HTTP headers:
-
-    oauth2.clientConfig.authHeaders = ["Accept": "application/json, text/plain"]
-    // or in your settings:
-    "headers": ["Accept": "application/json, text/plain"]
-
-Some sites (e.g. Slack) validate the User-Agent string against supported browser versions, which may not match WebKit's default in embedded mode. The embedded mode User-Agent may be overriden with:
-
-    oauth2.customUserAgent = "Version/15.6.1 Safari"
-    // or in your settings:
-    "custom_user_agent": "Your string of choice"
-
-Starting with version 2.0.1 on iOS 9, `SFSafariViewController` will be used for embedded authorization.
-Starting after version 4.2, on iOS 11 (`SFAuthenticationSession`) and iOS 12 (`ASWebAuthenticationSession`), you can opt-in to these newer authorization session view controllers:
-
-    oauth2.authConfig.ui.useAuthenticationSession = true
-
-To revert to the old custom `OAuth2WebViewController`, which you _should not do_ because `ASWebAuthenticationSession` is way more secure:
-
-    oauth2.authConfig.ui.useSafariView = false
-
-To customize the _go back_ button when using `OAuth2WebViewController` on iOS 8 and older:
-
-    oauth2.authConfig.ui.backButton = <# UIBarButtonItem(...) #>
-
-See below for settings about [the keychain](#keychain) and [PKCE](#pkce).
-
-Usage with Alamofire
---------------------
-
-You'll get the best experience when using Alamofire v4 or newer and OAuth2 v3 and newer:
-
-- How to use Alamofire [version 4 and newer](https://github.com/p2/OAuth2/wiki/Alamofire-4)
-- How to use [version 3 and older](https://github.com/p2/OAuth2/wiki/Alamofire-3)
-
-
-Dynamic Client Registration
----------------------------
-
-There is support for [dynamic client registration](https://tools.ietf.org/html/rfc7591).
-If during setup `registration_url` is set but `client_id` is not, the `authorize()` call automatically attempts to register the client before continuing to the actual authorization.
-Client credentials returned from registration are stored to the keychain.
-
-The `OAuth2DynReg` class is responsible for handling client registration.
-You can use its `register(client:callback:)` method manually if you need to.
-Registration parameters are taken from the client's configuration.
-
-```swift
-let oauth2 = OAuth2...()
-oauth2.registerClientIfNeeded() { error in
-    if let error = error {
-        // registration failed
-    }
-    else {
-        // client was registered
-    }
-}
-```
-
-```swift
-let oauth2 = OAuth2...()
-let dynreg = OAuth2DynReg()
-dynreg.register(client: oauth2) { params, error in
-    if let error = error {
-        // registration failed
-    }
-    else {
-        // client was registered with `params`
-    }
-}
-```
-
-PKCE
-----
-
-PKCE support is controlled by the `useProofKeyForCodeExchange` property, and the `use_pkce` key in the settings dictionary.
-It is disabled by default. When enabled, a new code verifier string is generated for every authorization request. 
-
-Refresh Token Rotation
-----------------------
-
-Refresh Token Rotation setting is controlled by the `refreshTokenRotationIsEnabled` property, and the `refresh_token_rotation` key in the settings dictionary.
-It is enabled by default. When enabled, all calls that could rotate the refresh token are executed sequentially to ensure that only the most recently rotated refresh token is persisted.
-
-
-Keychain
---------
-
-This framework can transparently use the iOS and macOS keychain.
-It is controlled by the `useKeychain` property, which can be disabled during initialization with the `keychain` settings dictionary key.
-Since this is **enabled by default**, if you do _not_ turn it off during initialization, the keychain will be queried for tokens and client credentials related to the authorization URL.
-If you turn it off _after_ initialization, the keychain will be queried for existing tokens, but new tokens will not be written to the keychain.
-
-If you want to delete the tokens from keychain, i.e. **log the user out** completely, call `forgetTokens()`.
-If you have dynamically registered your client and want to start anew, you can call `forgetClient()`.
-
-Ideally, access tokens get delivered with an "expires_in" parameter that tells you how long the token is valid.
-If it is missing the framework will still use those tokens if one is found in the keychain and not re-perform the OAuth dance.
-You will need to intercept 401s and re-authorize if an access token has expired but the framework has still pulled it from the keychain.
-This behavior can be turned off by supplying `token_assume_unexpired: false` in settings or setting `clientConfig.accessTokenAssumeUnexpired` to false.
-
-These are the settings dictionary keys you can use for more control:
-
-- `keychain`: a bool on whether to use keychain or not, true by default
-- `keychain_access_mode`: a string value for keychain kSecAttrAccessible attribute, "kSecAttrAccessibleWhenUnlocked" by default, you can change this to e.g. "kSecAttrAccessibleAfterFirstUnlock" if you need the tokens to be available when the phone is locked.
-- `keychain_access_group`: a string value for keychain kSecAttrAccessGroup attribute, nil by default
-- `keychain_account_for_client_credentials`: the name to use to identify client credentials in the keychain, "clientCredentials" by default
-- `keychain_account_for_tokens`: the name to use to identify the tokens in the keychain, "currentTokens" by default
-
-Installation
-------------
-
-You can use the _Swift Package Manager_, _git_ or _Carthage_.
-The preferred way is to use the _Swift Package Manager_.
-
-#### Swift Package Manager
-
-In Xcode 11 and newer, choose "File" from the Xcode Menu, then "Swift Packages" » "Add Package Dependency..." and paste the URL of this repo: `https://github.com/p2/OAuth2.git`. Pick a version and Xcode should do the rest.
-
-#### Carthage
-
-Installation via Carthage is easy enough:
-
-```ruby
-github "p2/OAuth2" ~> 4.2
-```
-
-#### git
-
-Using Terminal.app, clone the OAuth2 repository, best into a subdirectory of your app project:  
-
-    $ cd path/to/your/app
-    $ git clone --recursive https://github.com/p2/OAuth2.git
-
-If you're using git you'll want to add it as a submodule.
-Once cloning completes, open your app project in Xcode and add `OAuth2.xcodeproj` to your app:
-
-![Adding to Xcode](assets/step-adding.png)
-
-Now link the framework to your app:
-
-![Linking](assets/step-linking.png)
-
-These three steps are needed to:
-
-1. Make your App also build the framework
-2. Link the framework into your app
-3. Embed the framework in your app when distributing
-
-Swift Logging
--------------
-
-This library uses the [Swift logging system](https://swiftpackageindex.com/apple/swift-log) for internal logging. You can adjust the log level and configure the logger as needed for your application.
-
-License
--------
-
-This code is released under the [_Apache 2.0 license_](LICENSE.txt), which means that you can use it in open as well as closed source projects.
-Since there is no `NOTICE` file there is nothing that you have to include in your product.
-
-
-[sample]: https://github.com/p2/OAuth2App
+OAuth2 is available under the Apache License 2.0. See [LICENSE.txt](LICENSE.txt).

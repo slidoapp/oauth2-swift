@@ -8,72 +8,55 @@ github_url:  https://github.com/p2/OAuth2
 
 theme:       fullwidth
 readme:      README.md
-exclude:     "**/Keychain.swift"
 
 custom_categories:
-  - name: Flows
+  - name: Client
     children:
-      - OAuth2CodeGrant
-      - OAuth2CodeGrantBasicAuth
-      - OAuth2CodeGrantAzure
-      - OAuth2CodeGrantFacebook
-      - OAuth2CodeGrantLinkedIn
-      - OAuth2CodeGrantNoTokenType
-      - OAuth2ClientCredentials
-      - OAuth2ClientCredentialsReddit
-      - OAuth2ImplicitGrant
-      - OAuth2PasswordGrant
-      - OAuth2PasswordGrantDelegate
-    
-  - name: Errors & Types
-    children:
-      - OAuth2Error
-      - OAuth2JSON
-      - OAuth2StringDict
-  
-  - name: Requests
-    children:
-      - OAuth2DataLoader
-      - OAuth2DataRequest
-      - OAuth2AuthRequest
-      - OAuth2RequestPerformer
-      - OAuth2DataTaskRequestPerformer
-      - OAuth2Response
-      - OAuth2Headers
-      - OAuth2RequestParams
-      - OAuth2HTTPMethod
-      - OAuth2HTTPContentType
-      - OAuth2EndpointAuthMethod
-  
-  - name: Dyn Reg
-    children:
-      - OAuth2DynReg
-  
-  - name: Basics
-    children:
-      - OAuth2
-      - OAuth2Base
-      - OAuth2Requestable
-      - OAuth2Securable
-      - OAuth2AuthConfig
-      - OAuth2ClientConfig
-    
-  - name: Logging & Debugging
-    children:
-      - OAuth2Logger
-      - OAuth2DebugLogger
-      - OAuth2LogLevel
-      - OAuth2DebugURLSessionDelegate
-  
-  - name: Internals
-    children:
-      - OAuth2AuthorizerUI
-      - OAuth2Authorizer
-      - OAuth2CustomAuthorizerUI
-      - OAuth2CustomAuthorizer
-      - OAuth2ContextStore
-      - OAuth2KeychainAccount
-      - OAuth2WebViewController
-      - OAuth2DataLoaderSessionTaskDelegate
+      - OAuth2Client
+      - OAuth2ResourceClient
 
-      
+  - name: Configuration and Credentials
+    children:
+      - OAuth2ClientConfiguration
+      - OAuth2ClientAuthentication
+      - OAuth2ClientCredentials
+      - OAuth2CredentialRecord
+      - OAuth2KeychainConfiguration
+      - OAuth2KeychainCredentialStore
+      - InMemoryOAuth2CredentialStore
+
+  - name: Tokens and Registration
+    children:
+      - OAuth2TokenSet
+      - OAuth2TokenSnapshot
+      - OAuth2TokenResponse
+      - OAuth2TokenResponseFormat
+      - OAuth2ClientRegistration
+      - OAuth2ClientRegistrationResponse
+      - OAuth2DeviceAuthorization
+      - JSONValue
+
+  - name: Concurrency Boundaries
+    children:
+      - OAuth2Transport
+      - URLSessionOAuth2Transport
+      - OAuth2CredentialStore
+      - OAuth2Clock
+      - SystemOAuth2Clock
+      - OAuth2Sleeper
+      - SystemOAuth2Sleeper
+      - OAuth2Randomness
+      - SystemOAuth2Randomness
+
+  - name: Interactive Authorization
+    children:
+      - OAuth2AuthorizationPresenter
+      - OAuth2AuthorizationPresentationRequest
+      - OAuth2AuthenticationSessionPresenter
+      - OAuth2ImplicitResponseLocation
+
+  - name: HTTP and Errors
+    children:
+      - OAuth2HTTPResponse
+      - OAuth2ClientError
+      - OAuth2KeychainError
