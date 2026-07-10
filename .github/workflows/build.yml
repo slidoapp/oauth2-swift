@@ -33,6 +33,7 @@ jobs:
       DEVELOPER_DIR: ${{ matrix.xcode-path }}
 
     runs-on: ${{ matrix.macos }}
+    timeout-minutes: 15
 
     steps:
     - name: checkout
@@ -55,7 +56,6 @@ jobs:
       run: >
         mkdir -p reports &&
         swift test
-        --parallel
         --xunit-output 'reports/TestReport.xml'
         -Xswiftc -swift-version
         -Xswiftc '${{ matrix.language-mode }}'
