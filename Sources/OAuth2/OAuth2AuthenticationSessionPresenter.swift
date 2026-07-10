@@ -7,8 +7,8 @@ import Foundation
 /// The framework completion handler and explicit cancellation share one continuation slot, which is cleared
 /// before either path resumes it. A late framework callback therefore cannot double-resume the continuation.
 @MainActor
-public final class OAuth2AuthenticationSessionPresenter: NSObject, OAuth2AuthorizationPresenter, ASWebAuthenticationPresentationContextProviding {
-	private let presentationAnchor: ASPresentationAnchor
+public final class OAuth2AuthenticationSessionPresenter: NSObject, OAuth2AuthorizationPresenter {
+	private let presentationContextProvider: OAuth2AuthenticationSessionPresentationContextProvider
 	private let prefersEphemeralWebBrowserSession: Bool
 	private var session: ASWebAuthenticationSession?
 	private var continuation: CheckedContinuation<URL, any Error>?
@@ -18,7 +18,9 @@ public final class OAuth2AuthenticationSessionPresenter: NSObject, OAuth2Authori
 		prefersEphemeralWebBrowserSession: Bool = false
 	) {
 		self.prefersEphemeralWebBrowserSession = prefersEphemeralWebBrowserSession
-		self.presentationAnchor = presentationAnchor
+		presentationContextProvider = OAuth2AuthenticationSessionPresentationContextProvider(
+			presentationAnchor: presentationAnchor
+		)
 	}
 
 	public func authorize(_ request: OAuth2AuthorizationPresentationRequest) async throws -> URL {
@@ -49,7 +51,7 @@ public final class OAuth2AuthenticationSessionPresenter: NSObject, OAuth2Authori
 					}
 				}
 				self.session = session
-				session.presentationContextProvider = self
+				session.presentationContextProvider = presentationContextProvider
 				session.prefersEphemeralWebBrowserSession = prefersEphemeralWebBrowserSession
 				if !session.start() {
 					finish(with: .failure(OAuth2ClientError.invalidAuthorizationResponse("The authorization session did not start")))
@@ -71,15 +73,28 @@ public final class OAuth2AuthenticationSessionPresenter: NSObject, OAuth2Authori
 		session?.cancel()
 	}
 
-	public func presentationAnchor(for session: ASWebAuthenticationSession) -> ASPresentationAnchor {
-		presentationAnchor
-	}
-
 	private func finish(with result: Result<URL, any Error>) {
 		guard let continuation else { return }
 		self.continuation = nil
 		session = nil
 		continuation.resume(with: result)
+	}
+}
+
+/// Compatibility adapter for the Xcode 15.4 SDK, whose presentation-context protocol requirement is not annotated
+/// with `MainActor`. AuthenticationServices invokes this synchronous requirement as part of main-thread presentation;
+/// the assertion makes that interoperability assumption explicit without weakening the public presenter's isolation.
+private final class OAuth2AuthenticationSessionPresentationContextProvider: NSObject, ASWebAuthenticationPresentationContextProviding {
+	private let presentationAnchor: ASPresentationAnchor
+
+	@MainActor
+	init(presentationAnchor: ASPresentationAnchor) {
+		self.presentationAnchor = presentationAnchor
+	}
+
+	func presentationAnchor(for session: ASWebAuthenticationSession) -> ASPresentationAnchor {
+		precondition(Thread.isMainThread, "AuthenticationServices requested a presentation anchor off the main thread")
+		return presentationAnchor
 	}
 }
 #endif
