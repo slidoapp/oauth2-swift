@@ -116,7 +116,7 @@ jobs:
             jq -r --arg platform '${{ matrix.platform }}' '
               [.devices
                 | to_entries[]
-                | select(.key | contains("SimRuntime-\($platform)-"))
+                | select(.key | contains("SimRuntime.\($platform)-"))
                 | .value[]
                 | .udid][0] // empty
             '
@@ -151,7 +151,7 @@ jobs:
 
     - name: run xcresulttool
       uses: slidoapp/xcresulttool@v3.1.1
-      if: always()
+      if: ${{ always() && steps.test.outcome != 'skipped' }}
       with:
         title: 'results-xcode-tests-${{ matrix.platform }}'
         path: ${{ env.TEST_RESULTS_PATH }}
