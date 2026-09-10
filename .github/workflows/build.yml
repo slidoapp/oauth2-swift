@@ -80,10 +80,13 @@ jobs:
         include:
           - platform: 'macOS'
             scheme: 'OAuth2macOS'
+            destination: 'platform=macOS'
           - platform: 'iOS'
             scheme: 'OAuth2iOS'
+            destination: 'platform=iOS Simulator,name=iPhone 17,OS=26.2'
           - platform: 'tvOS'
             scheme: 'OAuth2tvOS'
+            destination: 'platform=tvOS Simulator,name=Apple TV,OS=26.2'
     
     env:
       DEVELOPER_DIR: '/Applications/Xcode_26.2.app'
@@ -108,7 +111,7 @@ jobs:
         xcodebuild
         -scheme '${{ matrix.scheme }}'
         -configuration Debug
-        -destination 'platform=${{ matrix.platform }}'
+        -destination '${{ matrix.destination }}'
         -showBuildTimingSummary
         build
 
@@ -119,14 +122,14 @@ jobs:
         xcodebuild
         -scheme '${{ matrix.scheme }}'
         -configuration Debug
-        -destination 'platform=${{ matrix.platform }}'
+        -destination '${{ matrix.destination }}'
         -resultBundlePath ${{ env.TEST_RESULTS_PATH }}
         test
 
     - name: run xcresulttool
-      uses: slidoapp/xcresulttool@v2.0.0
+      uses: slidoapp/xcresulttool@v3.1.2
       if: always()
       with:
         title: 'results-xcode-tests-${{ matrix.platform }}'
         path: ${{ env.TEST_RESULTS_PATH }}
-        upload-bundles: true
+        upload-bundles: always
