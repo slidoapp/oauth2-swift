@@ -82,7 +82,7 @@ class OAuth2PasswordGrantTests: XCTestCase {
 			"expires_in": 3600,
 			"refresh_token": "tGzv3JOkF0XG5Qx2TlKWIA",
 			"foo": "bar"
-		] as [String: Any]
+		] as OAuth2JSON
 		do {
 			let dict = try oauth.parseAccessTokenResponse(params: response)
 			XCTAssertEqual("bar", dict["foo"] as? String)
@@ -114,4 +114,3 @@ class OAuth2PasswordGrantTests: XCTestCase {
 		XCTAssertTrue(body!.contains("foo=bar+%26+hat"), "Must create correct request body")
 	}
 }
-

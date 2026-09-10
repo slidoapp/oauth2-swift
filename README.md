@@ -11,12 +11,12 @@ OAuth2 frameworks for **macOS**, **iOS** and **tvOS** written in Swift 5.
 - [🖥 Sample macOS app][sample] (with data loader examples)
 - [📖 Technical Documentation](https://p2.github.io/OAuth2)
 
-OAuth2 requires Xcode 12.4, the built framework can be used on **OS X 10.15**, **iOS 13**, **tvOS 13**, **watchOS 6** and later.
+OAuth2 requires Xcode 26 or a Swift 6.2 toolchain. The built framework can be used on **OS X 10.15**, **iOS 13**, **tvOS 13**, **watchOS 6** and later.
 Happy to accept pull requests, please see [CONTRIBUTING.md](./Docs/CONTRIBUTING.md)
 
 ### Swift Version
 
-Swift Package Manager builds require Swift 6.2 or later.
+Swift Package Manager builds require Swift 6.2 or later and use Swift 5 language mode.
 
 Since the Swift language is constantly evolving I have adopted a versioning scheme mirroring Swift versions:
 the framework version's **first two digits are always the Swift version** the library is compatible with, see [releases](https://github.com/p2/OAuth2/releases).

@@ -158,7 +158,9 @@ open class OAuth2Authorizer: OAuth2AuthorizerUI {
 		authenticationSession = ASWebAuthenticationSession(url: url,
 														   callbackURLScheme: redirectURL.scheme,
 														   completionHandler: completionHandler)
-		webAuthenticationPresentationContextProvider = await OAuth2ASWebAuthenticationPresentationContextProvider(authorizer: self)
+		webAuthenticationPresentationContextProvider = OAuth2ASWebAuthenticationPresentationContextProvider(
+			authorizeContext: oauth2.authConfig.authorizeContext
+		)
 		if let session = authenticationSession as? ASWebAuthenticationSession {
 			session.presentationContextProvider = webAuthenticationPresentationContextProvider as! OAuth2ASWebAuthenticationPresentationContextProvider
 			session.prefersEphemeralWebBrowserSession = prefersEphemeralWebBrowserSession
@@ -269,20 +271,20 @@ open class OAuth2Authorizer: OAuth2AuthorizerUI {
 
 #if canImport(AuthenticationServices)
 @available(macOS 10.15, *)
+@MainActor
 class OAuth2ASWebAuthenticationPresentationContextProvider: NSObject, ASWebAuthenticationPresentationContextProviding {
 	
-	private let authorizer: OAuth2Authorizer
+	nonisolated(unsafe) private weak var authorizeContext: AnyObject?
 	
-	init(authorizer: OAuth2Authorizer) {
-		self.authorizer = authorizer
+	nonisolated init(authorizeContext: AnyObject?) {
+		self.authorizeContext = authorizeContext
 	}
 	
-	@OAuth2Actor /// For Xcode 15, we need to specify the `@OAuth2Actor` explicitly, but in Xcode 16 this is no longer necessary. 🤷‍♂️
 	public func presentationAnchor(for session: ASWebAuthenticationSession) -> ASPresentationAnchor {
-		if let context = authorizer.oauth2.authConfig.authorizeContext as? ASPresentationAnchor {
+		if let context = authorizeContext as? ASPresentationAnchor {
 			return context
 		}
-		fatalError("Invalid authConfig.authorizeContext, must be an ASPresentationAnchor but is \(type(of: authorizer.oauth2.authConfig.authorizeContext))")
+		fatalError("Invalid authConfig.authorizeContext, must be an ASPresentationAnchor but is \(type(of: authorizeContext))")
 	}
 }
 #endif

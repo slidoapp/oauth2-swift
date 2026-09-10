@@ -101,7 +101,7 @@ class OAuth2DeviceGrantTests: XCTestCase {
 			"expires_in": 3600,
 			"refresh_token": "tGzv3JOkF0XG5Qx2TlKWIA",
 			"foo": "bar & hat"
-		] as [String: Any]
+		] as OAuth2JSON
 		
 		// must throw when "token_type" is missing
 		do {
@@ -146,7 +146,7 @@ class OAuth2DeviceGrantTests: XCTestCase {
 			"expires_in": 3600,
 			"refresh_token": "tGzv3JOkF0XG5Qx2TlKWIA",
 			"foo": "bar & hat"
-		] as [String : Any]
+		] as OAuth2JSON
 		
 		do {
 			_ = try oauth.parseAccessTokenResponse(params: response2)

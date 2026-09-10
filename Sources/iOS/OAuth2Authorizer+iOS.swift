@@ -180,7 +180,9 @@ open class OAuth2Authorizer: OAuth2AuthorizerUI {
 		
 		authenticationSession = ASWebAuthenticationSession(url: url, callbackURLScheme: redirectURL.scheme, completionHandler: completionHandler)
 		if #available(iOS 13.0, macCatalyst 13.1, *) {
-			webAuthenticationPresentationContextProvider = OAuth2ASWebAuthenticationPresentationContextProvider(authorizer: self)
+			webAuthenticationPresentationContextProvider = OAuth2ASWebAuthenticationPresentationContextProvider(
+				authorizeContext: oauth2.authConfig.authorizeContext
+			)
 			if let session = authenticationSession as? ASWebAuthenticationSession {
 				session.presentationContextProvider = webAuthenticationPresentationContextProvider as! OAuth2ASWebAuthenticationPresentationContextProvider
 				session.prefersEphemeralWebBrowserSession = prefersEphemeralWebBrowserSession
@@ -283,26 +285,25 @@ class OAuth2SFViewControllerDelegate: NSObject, SFSafariViewControllerDelegate, 
 #endif
 
 @available(iOS 13.0, *)
-@OAuth2Actor
+@MainActor
 class OAuth2ASWebAuthenticationPresentationContextProvider: NSObject, ASWebAuthenticationPresentationContextProviding {
 	
-	private let authorizer: OAuth2Authorizer
+	nonisolated(unsafe) private weak var authorizeContext: AnyObject?
 	
-	init(authorizer: OAuth2Authorizer) {
-		self.authorizer = authorizer
+	nonisolated init(authorizeContext: AnyObject?) {
+		self.authorizeContext = authorizeContext
 	}
 	
-	@OAuth2Actor
 	public func presentationAnchor(for session: ASWebAuthenticationSession) -> ASPresentationAnchor {
-		if let context = authorizer.oauth2.authConfig.authorizeContext as? ASPresentationAnchor {
+		if let context = authorizeContext as? ASPresentationAnchor {
 			return context
 		}
 		
-		if let context = authorizer.oauth2.authConfig.authorizeContext as? UIViewController {
+		if let context = authorizeContext as? UIViewController {
 			return context.view.window!
 		}
 		
-		fatalError("Invalid authConfig.authorizeContext, must be an ASPresentationAnchor or UIViewController but is \(type(of: authorizer.oauth2.authConfig.authorizeContext))")
+		fatalError("Invalid authConfig.authorizeContext, must be an ASPresentationAnchor or UIViewController but is \(type(of: authorizeContext))")
 	}
 }
 

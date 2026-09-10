@@ -49,5 +49,6 @@ let package = Package(
 		.testTarget(name: "BaseTests", dependencies: [.target(name: "TestUtils"), .target(name: "Base"), .target(name: "Flows")]),
 		.testTarget(name: "FlowTests", dependencies: [.target(name: "TestUtils"), .target(name: "Flows")]),
 //		.testTarget(name: "DataLoaderTests", dependencies: [.target(name: "DataLoader")]),
-	]
+	],
+	swiftLanguageModes: [.v5]
 )
