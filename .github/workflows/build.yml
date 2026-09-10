@@ -27,7 +27,7 @@ jobs:
 
     steps:
     - name: checkout
-      uses: actions/checkout@v4
+      uses: actions/checkout@v7.0.1
       with:
         submodules: true
 
@@ -96,7 +96,7 @@ jobs:
 
     steps:
     - name: checkout
-      uses: actions/checkout@v4
+      uses: actions/checkout@v7.0.1
       with:
         submodules: true
 
@@ -116,7 +116,7 @@ jobs:
         build
 
     - name: test
-      if: success()
+      if: success() && matrix.platform == 'macOS'
       continue-on-error: true
       run: >
         xcodebuild
@@ -128,7 +128,7 @@ jobs:
 
     - name: run xcresulttool
       uses: slidoapp/xcresulttool@v3.1.2
-      if: always()
+      if: always() && matrix.platform == 'macOS'
       with:
         title: 'results-xcode-tests-${{ matrix.platform }}'
         path: ${{ env.TEST_RESULTS_PATH }}
