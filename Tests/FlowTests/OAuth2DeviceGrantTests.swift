@@ -44,7 +44,7 @@ class OAuth2DeviceGrantTests: XCTestCase {
 		"keychain": false,
 	]
 	
-	func testInit() {
+	func testInit() async {
 		let oauth = OAuth2DeviceGrant(settings: baseSettings)
 		XCTAssertEqual(oauth.clientId, "abc", "Must init `client_id`")
 		XCTAssertFalse(oauth.useKeychain, "No keychain")
@@ -55,7 +55,7 @@ class OAuth2DeviceGrantTests: XCTestCase {
 		XCTAssertEqual(oauth.tokenURL!, URL(string: "https://token.ful.io")!, "Must init `token_uri`")
 	}
 	
-	func testDeviceAccessTokenRequest() {
+	func testDeviceAccessTokenRequest() async {
 		let oauth = OAuth2DeviceGrant(settings: baseSettings)
 		
 		let req = try! oauth.deviceAccessTokenRequest(with: "pp").asURLRequest(for: oauth)
@@ -69,7 +69,7 @@ class OAuth2DeviceGrantTests: XCTestCase {
 		XCTAssertEqual(query["device_code"]!, "pp", "Expecting correct `device_code`")
 	}
 	
-	func testDeviceAuthorizationRequest() {
+	func testDeviceAuthorizationRequest() async {
 		let oauth = OAuth2DeviceGrant(settings: baseSettings)
 		
 		let req = try! oauth.deviceAuthorizationRequest().asURLRequest(for: oauth)
@@ -81,7 +81,7 @@ class OAuth2DeviceGrantTests: XCTestCase {
 		XCTAssertEqual(query["client_id"]!, "abc", "Expecting correct `client_id`")
 	}
 	
-	func testDeviceAuthorizationRequestWithAdditionalParams() {
+	func testDeviceAuthorizationRequestWithAdditionalParams() async {
 		let oauth = OAuth2DeviceGrant(settings: baseSettings)
 		let additionalParams = ["test_param": "test_value"]
 		
@@ -94,14 +94,14 @@ class OAuth2DeviceGrantTests: XCTestCase {
 		XCTAssertEqual(query["test_param"]!, "test_value", "Expecting correct `test_param`")
 	}
 	
-	func testDeviceAccessTokenResponse() {
+	func testDeviceAccessTokenResponse() async {
 		let oauth = OAuth2DeviceGrant(settings: baseSettings)
 		var response = [
 			"access_token": "2YotnFZFEjr1zCsicMWpAA",
 			"expires_in": 3600,
 			"refresh_token": "tGzv3JOkF0XG5Qx2TlKWIA",
 			"foo": "bar & hat"
-		] as [String: Any]
+		] as [String: any Sendable]
 		
 		// must throw when "token_type" is missing
 		do {
@@ -146,7 +146,7 @@ class OAuth2DeviceGrantTests: XCTestCase {
 			"expires_in": 3600,
 			"refresh_token": "tGzv3JOkF0XG5Qx2TlKWIA",
 			"foo": "bar & hat"
-		] as [String : Any]
+		] as [String: any Sendable]
 		
 		do {
 			_ = try oauth.parseAccessTokenResponse(params: response2)

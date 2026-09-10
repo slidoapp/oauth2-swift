@@ -36,7 +36,7 @@ import OAuth2
 @OAuth2Actor
 class OAuth2ImplicitGrantTests: XCTestCase
 {
-	func testInit() {
+	func testInit() async {
 		let oauth = OAuth2ImplicitGrant(settings: [
 			"client_id": "abc",
 			"keychain": false,

@@ -47,7 +47,7 @@ class OAuth2DynRegTests: XCTestCase {
 		return OAuth2ImplicitGrant(settings: settings)
 	}
 	
-	func testRegistrationRequest() {
+	func testRegistrationRequest() async {
 		let oauth = genericOAuth2(["registration_uri": "https://register.ful.io"])
 		XCTAssertNotNil(oauth.clientConfig.registrationURL, "Must parse registration URL from settings dict")
 		XCTAssertEqual(oauth.clientConfig.registrationURL!.absoluteString, "https://register.ful.io")

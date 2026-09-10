@@ -53,7 +53,7 @@ class OAuth2RefreshTokenTests: XCTestCase {
 		])
 	}
 	
-	func testCannotRefresh() {
+	func testCannotRefresh() async {
 		let oauth = genericOAuth2()
 		do {
 			_ = try oauth.tokenRequestForTokenRefresh().asURLRequest(for: oauth)
@@ -66,7 +66,7 @@ class OAuth2RefreshTokenTests: XCTestCase {
 		}
 	}
 	
-	func testRefreshRequest() {
+	func testRefreshRequest() async {
 		let oauth = genericOAuth2()
 		oauth.clientConfig.refreshToken = "pov"
 		
@@ -88,7 +88,7 @@ class OAuth2RefreshTokenTests: XCTestCase {
 		XCTAssertNil(req!.allHTTPHeaderFields?["Authorization"])
 	}
 
-	func testRefreshRequestWithDedicatedRefreshURI() {
+	func testRefreshRequestWithDedicatedRefreshURI() async {
 		let oauth = refreshOAuth2()
 		oauth.clientConfig.refreshToken = "pov"
 
@@ -110,7 +110,7 @@ class OAuth2RefreshTokenTests: XCTestCase {
 		XCTAssertNil(req!.allHTTPHeaderFields?["Authorization"])
 	}
 	
-	func testRefreshRequestWithSecret() {
+	func testRefreshRequestWithSecret() async {
 		let oauth = genericOAuth2()
 		oauth.clientConfig.refreshToken = "pov"
 		oauth.clientConfig.clientSecret = "uvw"
@@ -128,7 +128,7 @@ class OAuth2RefreshTokenTests: XCTestCase {
 		XCTAssertEqual("Basic YWJjOnV2dw==", auth, "Expecting correctly base64-encoded Authorization header")
 	}
 	
-	func testRefreshRequestWithSecretInBody() {
+	func testRefreshRequestWithSecretInBody() async {
 		let oauth = genericOAuth2()
 		oauth.clientConfig.refreshToken = "pov"
 		oauth.clientConfig.clientSecret = "uvw"

@@ -53,7 +53,7 @@ class OAuth2ClientCredentialsTests: XCTestCase {
 		])
 	}
 	
-	func testInit() {
+	func testInit() async {
 		let oauth = genericOAuth2()
 		XCTAssertEqual(oauth.clientId, "abc", "Must init `client_id`")
 		XCTAssertEqual(oauth.clientSecret!, "def", "Must init `client_secret`")
@@ -62,7 +62,7 @@ class OAuth2ClientCredentialsTests: XCTestCase {
 		XCTAssertFalse(oauth.useKeychain, "Don't use keychain")
 	}
 	
-	func testTokenRequest() {
+	func testTokenRequest() async {
 		let oauth = genericOAuth2()
 		let request = try! oauth.accessTokenRequest().asURLRequest(for: oauth)
 		XCTAssertEqual("POST", request.httpMethod, "Must be a POST request")
@@ -77,7 +77,7 @@ class OAuth2ClientCredentialsTests: XCTestCase {
 		XCTAssertEqual(parts, Set(["grant_type=client_credentials", "scope=login+and+more"]), "Must create correct request body")
 	}
 	
-	func testFailedTokenRequest() {
+	func testFailedTokenRequest() async {
 		let oauth = OAuth2ClientCredentials(settings: [
 			"client_id": "abc",
 			"authorize_uri": "https://auth.ful.io",
@@ -96,7 +96,7 @@ class OAuth2ClientCredentialsTests: XCTestCase {
 		}
 	}
     
-	func testTokenRequestNoScope() {
+	func testTokenRequestNoScope() async {
 		let oauth = genericOAuth2NoScope()
 		let request = try! oauth.accessTokenRequest().asURLRequest(for: oauth)
 		XCTAssertEqual("POST", request.httpMethod, "Must be a POST request")
@@ -106,7 +106,7 @@ class OAuth2ClientCredentialsTests: XCTestCase {
 		XCTAssertEqual(body!, "grant_type=client_credentials", "Must create correct request body")
 	}
 	
-	func testClientCredsReddit() {
+	func testClientCredsReddit() async {
 		var oauth = OAuth2ClientCredentialsReddit(settings: [
 			"client_id": "abc",
 			"authorize_uri": "https://auth.ful.io",

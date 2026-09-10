@@ -46,7 +46,7 @@ class OAuth2PasswordGrantTests: XCTestCase {
 		])
 	}
 	
-	func testInit() {
+	func testInit() async {
 		let oauth = genericOAuth2Password()
 		XCTAssertEqual(oauth.clientId, "abc", "Must init `client_id`")
 		XCTAssertEqual(oauth.clientSecret!, "def", "Must init `client_secret`")
@@ -57,7 +57,7 @@ class OAuth2PasswordGrantTests: XCTestCase {
 		XCTAssertFalse(oauth.useKeychain, "Don't use keychain")
 	}
 	
-	func testTokenRequest() {
+	func testTokenRequest() async {
 		let oauth = genericOAuth2Password()
 		let request = try! oauth.accessTokenRequest().asURLRequest(for: oauth)
 		XCTAssertEqual("POST", request.httpMethod, "Must be a POST request")
@@ -74,7 +74,7 @@ class OAuth2PasswordGrantTests: XCTestCase {
 		XCTAssertTrue(body!.contains("password=Here+is+my+password"), "Must create correct request body")
 	}
 	
-	func testTokenResponse() {
+	func testTokenResponse() async {
 		let oauth = genericOAuth2Password()
 		let response = [
 			"access_token": "2YotnFZFEjr1zCsicMWpAA",
@@ -82,7 +82,7 @@ class OAuth2PasswordGrantTests: XCTestCase {
 			"expires_in": 3600,
 			"refresh_token": "tGzv3JOkF0XG5Qx2TlKWIA",
 			"foo": "bar"
-		] as [String: Any]
+		] as [String: any Sendable]
 		do {
 			let dict = try oauth.parseAccessTokenResponse(params: response)
 			XCTAssertEqual("bar", dict["foo"] as? String)
@@ -95,7 +95,7 @@ class OAuth2PasswordGrantTests: XCTestCase {
 		}
 	}
 	
-	func testTokenRequestNoScope() {
+	func testTokenRequestNoScope() async {
 		let oauth = OAuth2PasswordGrant(settings: [
 			"client_id": "abc",
 			"authorize_uri": "https://auth.ful.io",
@@ -114,4 +114,3 @@ class OAuth2PasswordGrantTests: XCTestCase {
 		XCTAssertTrue(body!.contains("foo=bar+%26+hat"), "Must create correct request body")
 	}
 }
-
