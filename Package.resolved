@@ -1,25 +1,33 @@
 {
-  "object": {
-    "pins": [
-      {
-        "package": "Semaphore",
-        "repositoryURL": "https://github.com/groue/Semaphore.git",
-        "state": {
-          "branch": null,
-          "revision": "2543679282aa6f6c8ecf2138acd613ed20790bc2",
-          "version": "0.1.0"
-        }
-      },
-      {
-        "package": "SwiftKeychain",
-        "repositoryURL": "https://github.com/slidoapp/SwiftKeychain.git",
-        "state": {
-          "branch": null,
-          "revision": "c322d47aced9207f0f01082f2c316df5aa611d6f",
-          "version": "2.1.0"
-        }
+  "originHash" : "3ac9c119b0453d2387185c85411410b79eb9385dac729e3c65e2ad3d6cfe9bf7",
+  "pins" : [
+    {
+      "identity" : "semaphore",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/groue/Semaphore.git",
+      "state" : {
+        "revision" : "2543679282aa6f6c8ecf2138acd613ed20790bc2",
+        "version" : "0.1.0"
       }
-    ]
-  },
-  "version": 1
+    },
+    {
+      "identity" : "swift-log",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/apple/swift-log.git",
+      "state" : {
+        "revision" : "ce592ae52f982c847a4efc0dd881cc9eb32d29f2",
+        "version" : "1.6.4"
+      }
+    },
+    {
+      "identity" : "swiftkeychain",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/slidoapp/SwiftKeychain.git",
+      "state" : {
+        "revision" : "c322d47aced9207f0f01082f2c316df5aa611d6f",
+        "version" : "2.1.0"
+      }
+    }
+  ],
+  "version" : 3
 }
