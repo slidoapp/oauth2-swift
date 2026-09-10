@@ -17,7 +17,7 @@ jobs:
         swift: ['swift6.2']
         include:
           - swift: 'swift6.2'
-            xcode-path: '/Applications/Xcode_26.0.app'
+            xcode-path: '/Applications/Xcode_26.2.app'
             macos: 'macos-15'
     
     env:
@@ -86,7 +86,7 @@ jobs:
             scheme: 'OAuth2tvOS'
     
     env:
-      DEVELOPER_DIR: '/Applications/Xcode_26.0.app'
+      DEVELOPER_DIR: '/Applications/Xcode_26.2.app'
       TEST_RESULTS_PATH: 'OAuth2Tests_${{ matrix.platform }}_run${{ github.run_number }}.xcresult'
 
     runs-on: ${{ matrix.macos }}
@@ -103,12 +103,38 @@ jobs:
     - name: swift version
       run: swift --version
 
+    - name: select destination
+      id: destination
+      run: |
+        if [[ '${{ matrix.platform }}' == 'macOS' ]]; then
+          echo 'value=platform=macOS' >> "$GITHUB_OUTPUT"
+          exit 0
+        fi
+
+        simulator_id="$(
+          xcrun simctl list devices available --json |
+            jq -r --arg platform '${{ matrix.platform }}' '
+              [.devices
+                | to_entries[]
+                | select(.key | contains("SimRuntime-\($platform)-"))
+                | .value[]
+                | .udid][0] // empty
+            '
+        )"
+
+        if [[ -z "$simulator_id" ]]; then
+          echo 'No available ${{ matrix.platform }} simulator found.' >&2
+          exit 1
+        fi
+
+        echo "value=platform=${{ matrix.platform }} Simulator,id=$simulator_id" >> "$GITHUB_OUTPUT"
+
     - name: build
       run: >
         xcodebuild
         -scheme '${{ matrix.scheme }}'
         -configuration Debug
-        -destination 'platform=${{ matrix.platform }}'
+        -destination '${{ steps.destination.outputs.value }}'
         -showBuildTimingSummary
         build
 
@@ -119,12 +145,12 @@ jobs:
         xcodebuild
         -scheme '${{ matrix.scheme }}'
         -configuration Debug
-        -destination 'platform=${{ matrix.platform }}'
+        -destination '${{ steps.destination.outputs.value }}'
         -resultBundlePath ${{ env.TEST_RESULTS_PATH }}
         test
 
     - name: run xcresulttool
-      uses: slidoapp/xcresulttool@v2.0.0
+      uses: slidoapp/xcresulttool@v3.1.1
       if: always()
       with:
         title: 'results-xcode-tests-${{ matrix.platform }}'
