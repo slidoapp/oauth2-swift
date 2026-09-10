@@ -46,9 +46,6 @@ open class OAuth2Authorizer: OAuth2AuthorizerUI {
 	/// Used to store the authentication session.
 	private var authenticationSession: AnyObject?
 	
-	/// Used to store the ASWebAuthenticationPresentationContextProvider
-	private var webAuthenticationPresentationContextProvider: AnyObject?
-	
 	public init(oauth2: OAuth2Base) {
 		self.oauth2 = oauth2
 	}
@@ -95,7 +92,7 @@ open class OAuth2Authorizer: OAuth2AuthorizerUI {
 				throw OAuth2Error.noRedirectURL
 			}
 			
-			authenticationSessionEmbedded(at: url, withRedirect: redirect, prefersEphemeralWebBrowserSession: config.ui.prefersEphemeralWebBrowserSession)
+			await authenticationSessionEmbedded(at: url, withRedirect: redirect, prefersEphemeralWebBrowserSession: config.ui.prefersEphemeralWebBrowserSession)
 		} else {
 			#if os(visionOS)
 			throw OAuth2Error.invalidAuthorizationConfiguration("visionOS only supports ASWebAuthenticationSession")
@@ -146,47 +143,47 @@ open class OAuth2Authorizer: OAuth2AuthorizerUI {
 	*/
 	@available(iOS 11.0, *)
 	@discardableResult
-	public func authenticationSessionEmbedded(at url: URL, withRedirect redirect: String, prefersEphemeralWebBrowserSession: Bool = false) -> Bool {
+	public func authenticationSessionEmbedded(at url: URL, withRedirect redirect: String, prefersEphemeralWebBrowserSession: Bool = false) async -> Bool {
 		guard let redirectURL = URL(string: redirect) else {
 			oauth2.logger?.warning("Unable to parse redirect URL ”(redirect)“")
 			return false
 		}
-		let completionHandler: (URL?, Error?) -> Void = { url, error in
-			if let url = url {
-				Task {
+		let completionHandler: @Sendable (URL?, Error?) -> Void = { url, error in
+			Task { @OAuth2Actor in
+				if let url {
 					do {
-						try await self.oauth2.handleRedirectURL(url as URL)
-					}
-					catch {
+						try await self.oauth2.handleRedirectURL(url)
+					} catch {
 						self.oauth2.logger?.warning("Cannot intercept redirect URL: \(error)")
 					}
-				}
-			} else {
-				if let authenticationSessionError = error as? ASWebAuthenticationSessionError {
-					switch authenticationSessionError.code {
-					case .canceledLogin:
-						self.oauth2.didFail(with: .requestCancelled)
-					default:
+				} else {
+					if let authenticationSessionError = error as? ASWebAuthenticationSessionError {
+						switch authenticationSessionError.code {
+						case .canceledLogin:
+							self.oauth2.didFail(with: .requestCancelled)
+						default:
+							self.oauth2.didFail(with: error?.asOAuth2Error)
+						}
+					} else {
 						self.oauth2.didFail(with: error?.asOAuth2Error)
 					}
 				}
-				else {
-					self.oauth2.didFail(with: error?.asOAuth2Error)
-				}
+				self.authenticationSession = nil
 			}
-			self.authenticationSession = nil
-			self.webAuthenticationPresentationContextProvider = nil
 		}
 		
-		authenticationSession = ASWebAuthenticationSession(url: url, callbackURLScheme: redirectURL.scheme, completionHandler: completionHandler)
-		if #available(iOS 13.0, macCatalyst 13.1, *) {
-			webAuthenticationPresentationContextProvider = OAuth2ASWebAuthenticationPresentationContextProvider(authorizer: self)
-			if let session = authenticationSession as? ASWebAuthenticationSession {
-				session.presentationContextProvider = webAuthenticationPresentationContextProvider as! OAuth2ASWebAuthenticationPresentationContextProvider
-				session.prefersEphemeralWebBrowserSession = prefersEphemeralWebBrowserSession
-			}
+		let config = oauth2.authConfig
+		let session = await MainActor.run {
+			OAuth2AuthenticationSession(
+				url: url,
+				callbackURLScheme: redirectURL.scheme,
+				completionHandler: completionHandler,
+				config: config,
+				prefersEphemeralWebBrowserSession: prefersEphemeralWebBrowserSession
+			)
 		}
-		return (authenticationSession as! ASWebAuthenticationSession).start()
+		authenticationSession = session
+		return await session.start()
 	}
 	
 	
@@ -257,7 +254,7 @@ open class OAuth2Authorizer: OAuth2AuthorizerUI {
 /**
 A custom `SFSafariViewControllerDelegate` that we use with the safari view controller.
 */
-class OAuth2SFViewControllerDelegate: NSObject, SFSafariViewControllerDelegate, UIAdaptivePresentationControllerDelegate {
+class OAuth2SFViewControllerDelegate: NSObject, @MainActor SFSafariViewControllerDelegate, @MainActor UIAdaptivePresentationControllerDelegate {
 	
 	weak var authorizer: OAuth2Authorizer?
 	
@@ -266,7 +263,7 @@ class OAuth2SFViewControllerDelegate: NSObject, SFSafariViewControllerDelegate, 
 	}
 	
 	@available(iOS 9.0, *)
-	nonisolated func safariViewControllerDidFinish(_ controller: SFSafariViewController) {
+	func safariViewControllerDidFinish(_ controller: SFSafariViewController) {
 		Task {
 			await authorizer?.safariViewControllerDidCancel(controller)
 		}
@@ -283,26 +280,51 @@ class OAuth2SFViewControllerDelegate: NSObject, SFSafariViewControllerDelegate, 
 #endif
 
 @available(iOS 13.0, *)
-@OAuth2Actor
+@MainActor
 class OAuth2ASWebAuthenticationPresentationContextProvider: NSObject, ASWebAuthenticationPresentationContextProviding {
 	
-	private let authorizer: OAuth2Authorizer
+	private let config: OAuth2AuthConfig
 	
-	init(authorizer: OAuth2Authorizer) {
-		self.authorizer = authorizer
+	init(config: OAuth2AuthConfig) {
+		self.config = config
 	}
 	
-	@OAuth2Actor
 	public func presentationAnchor(for session: ASWebAuthenticationSession) -> ASPresentationAnchor {
-		if let context = authorizer.oauth2.authConfig.authorizeContext as? ASPresentationAnchor {
+		if let context = config.authorizeContext as? ASPresentationAnchor {
 			return context
 		}
 		
-		if let context = authorizer.oauth2.authConfig.authorizeContext as? UIViewController {
+		if let context = config.authorizeContext as? UIViewController {
 			return context.view.window!
 		}
 		
-		fatalError("Invalid authConfig.authorizeContext, must be an ASPresentationAnchor or UIViewController but is \(type(of: authorizer.oauth2.authConfig.authorizeContext))")
+		fatalError("Invalid authConfig.authorizeContext, must be an ASPresentationAnchor or UIViewController but is \(type(of: config.authorizeContext))")
+	}
+}
+
+@available(iOS 13.0, *)
+@MainActor
+private final class OAuth2AuthenticationSession {
+	private let session: ASWebAuthenticationSession
+	private let presentationContextProvider: OAuth2ASWebAuthenticationPresentationContextProvider
+
+	init(url: URL,
+		 callbackURLScheme: String?,
+		 completionHandler: @escaping @Sendable (URL?, Error?) -> Void,
+		 config: OAuth2AuthConfig,
+		 prefersEphemeralWebBrowserSession: Bool) {
+		presentationContextProvider = OAuth2ASWebAuthenticationPresentationContextProvider(config: config)
+		session = ASWebAuthenticationSession(
+			url: url,
+			callbackURLScheme: callbackURLScheme,
+			completionHandler: completionHandler
+		)
+		session.presentationContextProvider = presentationContextProvider
+		session.prefersEphemeralWebBrowserSession = prefersEphemeralWebBrowserSession
+	}
+
+	func start() -> Bool {
+		session.start()
 	}
 }
 
