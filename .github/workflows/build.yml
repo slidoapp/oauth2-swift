@@ -14,14 +14,11 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        swift: ['swift6', 'swift5']
+        swift: ['swift6.2']
         include:
-          - swift: 'swift6'
-            xcode-path: '/Applications/Xcode_16.2.app'
-            macos: 'macos-14'
-          - swift: 'swift5'
-            xcode-path: '/Applications/Xcode_15.4.app'
-            macos: 'macos-14'
+          - swift: 'swift6.2'
+            xcode-path: '/Applications/Xcode_26.2.app'
+            macos: 'macos-26'
     
     env:
       DEVELOPER_DIR: ${{ matrix.xcode-path }}
@@ -78,7 +75,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        macos: [ 'macos-14' ]
+        macos: [ 'macos-26' ]
         platform: [ 'macOS', 'iOS', 'tvOS' ]
         include:
           - platform: 'macOS'
@@ -89,7 +86,7 @@ jobs:
             scheme: 'OAuth2tvOS'
     
     env:
-      DEVELOPER_DIR: '/Applications/Xcode_15.4.0.app'
+      DEVELOPER_DIR: '/Applications/Xcode_26.2.app'
       TEST_RESULTS_PATH: 'OAuth2Tests_${{ matrix.platform }}_run${{ github.run_number }}.xcresult'
 
     runs-on: ${{ matrix.macos }}
