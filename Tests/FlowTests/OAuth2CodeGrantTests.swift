@@ -44,7 +44,7 @@ class OAuth2CodeGrantTests: XCTestCase {
 		"keychain": false,
 	]
 	
-	func testInit() {
+	func testInit() async {
 		let oauth = OAuth2CodeGrant(settings: baseSettings)
 		XCTAssertEqual(oauth.clientId, "abc", "Must init `client_id`")
 		XCTAssertEqual(oauth.clientSecret!, "xyz", "Must init `client_secret`")
@@ -55,7 +55,7 @@ class OAuth2CodeGrantTests: XCTestCase {
 		XCTAssertEqual(oauth.tokenURL!, URL(string: "https://token.ful.io")!, "Must init `token_uri`")
 	}
 	
-	func testNotTLS() {
+	func testNotTLS() async {
 		let oauth = OAuth2CodeGrant(settings: [
 			"client_id": "abc",
 			"client_secret": "xyz",
@@ -86,7 +86,7 @@ class OAuth2CodeGrantTests: XCTestCase {
 		}
 	}
 	
-	func testAuthorizeURI() {
+	func testAuthorizeURI() async {
 		let oauth = OAuth2CodeGrant(settings: baseSettings)
 		XCTAssertNotNil(oauth.authURL, "Must init `authorize_uri`")
 		
@@ -100,7 +100,7 @@ class OAuth2CodeGrantTests: XCTestCase {
 		XCTAssertTrue(8 == (query["state"]!).count, "Expecting an auto-generated UUID for `state`")
 	}
 	
-	func testAuthorizeURIWithPKCE() {
+	func testAuthorizeURIWithPKCE() async {
 		let oauth = OAuth2CodeGrant(settings: [
 			"client_id": "abc",
 			"authorize_uri": "https://auth.ful.io",
@@ -120,7 +120,7 @@ class OAuth2CodeGrantTests: XCTestCase {
 		XCTAssertTrue(8 == (query["state"]!).count, "Expecting an auto-generated UUID for `state`")
 	}
 	
-	func testRedirectURI() {
+	func testRedirectURI() async {
 		let oauth = OAuth2CodeGrant(settings: baseSettings)
 		oauth.redirect = "oauth2://callback"
 		oauth.context.redirectURL = oauth.redirect
@@ -203,7 +203,7 @@ class OAuth2CodeGrantTests: XCTestCase {
 		}
 	}
 	
-	func testTokenRequest() {
+	func testTokenRequest() async {
 		let oauth = OAuth2CodeGrant(settings: [
 			"client_id": "abc",
 			"authorize_uri": "https://auth.ful.io",
@@ -241,7 +241,7 @@ class OAuth2CodeGrantTests: XCTestCase {
 		XCTAssertNil(query["state"], "`state` must be empty")
 	}
 	
-	func testTokenRequestWithSecret() {
+	func testTokenRequestWithSecret() async {
 		let oauth = OAuth2CodeGrant(settings: baseSettings)
 		oauth.redirect = "oauth2://callback"
 		oauth.context.redirectURL = "oauth2://callback"
@@ -277,7 +277,7 @@ class OAuth2CodeGrantTests: XCTestCase {
 		XCTAssertNil(query2["state"], "`state` must be empty")
 	}
 	
-	func testTokenRequestWithPKCE() {
+	func testTokenRequestWithPKCE() async {
 		let oauth = OAuth2CodeGrant(settings: [
 			"client_id": "abc",
 			"authorize_uri": "https://auth.ful.io",
@@ -320,7 +320,7 @@ class OAuth2CodeGrantTests: XCTestCase {
 		XCTAssertNotNil(query["code_verifier"], "Must  have `code_verifier`")
 	}
 	
-	func testCustomAuthParameters() {
+	func testCustomAuthParameters() async {
 		let oauth = OAuth2CodeGrant(settings: baseSettings)
 		oauth.redirect = "oauth2://callback"
 		oauth.context.redirectURL = "oauth2://callback"
@@ -348,7 +348,7 @@ class OAuth2CodeGrantTests: XCTestCase {
 		XCTAssertEqual(query3["bar"], "hat", "Expecting key `bar` to be `hat`")
 	}
 	
-	func testCustomAuthParametersInit() {
+	func testCustomAuthParametersInit() async {
 		var settings = baseSettings
 		settings["parameters"] = ["foo": "bar"]
 		let oauth = OAuth2CodeGrant(settings: settings)
@@ -361,7 +361,7 @@ class OAuth2CodeGrantTests: XCTestCase {
 		XCTAssertEqual(query["foo"], "bar", "Expecting key `foo` to be `bar`")
 	}
 	
-	func testTokenRequestAgainstAuthURL() {
+	func testTokenRequestAgainstAuthURL() async {
 		
 		// test fallback to authURL
 		let oauth = OAuth2CodeGrant(settings: [

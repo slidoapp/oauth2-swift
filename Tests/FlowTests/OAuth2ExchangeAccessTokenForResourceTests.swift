@@ -45,7 +45,7 @@ class OAuth2ExchangeAccessTokenForResourceTests: XCTestCase {
 			]
 		]
 	
-	func testInit() {
+	func testInit() async {
 		let oauth = OAuth2(settings: baseSettings)
 		XCTAssertEqual(oauth.clientId, "abc", "Must init `client_id`")
 		XCTAssertEqual(oauth.scope, "login and more")
@@ -54,7 +54,7 @@ class OAuth2ExchangeAccessTokenForResourceTests: XCTestCase {
 		XCTAssertEqual(oauth.tokenURL!, URL(string: "https://token.ful.io")!, "Must init `token_uri`")
 	}
 
-	func testExchangeAccessTokenForResourceRequest() throws {
+	func testExchangeAccessTokenForResourceRequest() async throws {
 		let oauth = OAuth2(settings: baseSettings)
 		
 		oauth.verbose = false
@@ -69,7 +69,7 @@ class OAuth2ExchangeAccessTokenForResourceTests: XCTestCase {
 		assertParams(params: params)
 	}
 	
-	func testExchangeAccessTokenForMultipleResourcesRequest() throws {
+	func testExchangeAccessTokenForMultipleResourcesRequest() async throws {
 		let oauth = OAuth2(settings: baseSettings)
 		
 		oauth.verbose = false

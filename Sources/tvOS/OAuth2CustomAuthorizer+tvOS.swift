@@ -46,7 +46,7 @@ public class OAuth2CustomAuthorizer: OAuth2CustomAuthorizerUI {
 	- parameter context:         The parent controller to use to present the login controller.
 	- parameter animated:        Whether the presentation should be animated.
 	*/
-	public func present(loginController: AnyObject, fromContext context: AnyObject?, animated: Bool) throws {
+	public func present(loginController: AnyObject, fromContext context: AnyObject?, animated: Bool) async throws {
 		guard let parentController = context as? UIViewController else {
 			throw context == nil ? OAuth2Error.noAuthorizationContext : OAuth2Error.invalidAuthorizationContext
 		}
@@ -55,10 +55,8 @@ public class OAuth2CustomAuthorizer: OAuth2CustomAuthorizerUI {
 													 expectedType: String(describing: UIViewController.self))
 		}
 		
-		Task {
-			presentingController = parentController
-			await presentingController?.present(controller, animated: animated)
-		}
+		presentingController = parentController
+		await presentingController?.present(controller, animated: animated)
 	}
 	
 	

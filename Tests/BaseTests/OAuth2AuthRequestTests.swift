@@ -34,7 +34,7 @@ import OAuth2
 @OAuth2Actor
 class OAuth2AuthRequestTests: XCTestCase {
 	
-	func testMethod() {
+	func testMethod() async {
 		let url = URL(string: "http://localhost")!
 		let req1 = OAuth2AuthRequest(url: url)
 		XCTAssertTrue(req1.method == .POST)
@@ -44,7 +44,7 @@ class OAuth2AuthRequestTests: XCTestCase {
 		XCTAssertTrue(req3.method == .GET)
 	}
 	
-	func testContentType() {
+	func testContentType() async {
 		let url = URL(string: "http://localhost")!
 		let req = OAuth2AuthRequest(url: url)
 		XCTAssertTrue(req.contentType == .wwwForm)
@@ -55,7 +55,7 @@ class OAuth2AuthRequestTests: XCTestCase {
 		XCTAssertEqual("application/json", req.contentType.rawValue)
 	}
 	
-	func testHeaders() {
+	func testHeaders() async {
 		let url = URL(string: "http://localhost")!
 		let req = OAuth2AuthRequest(url: url)
 		XCTAssertTrue(0 == req.params.count)
@@ -65,7 +65,7 @@ class OAuth2AuthRequestTests: XCTestCase {
 		XCTAssertEqual(1, req.headers?.count)
 	}
 	
-	func testParams() {
+	func testParams() async {
 		let url = URL(string: "http://localhost")!
 		let req = OAuth2AuthRequest(url: url)
 		XCTAssertTrue(0 == req.params.count)
@@ -85,7 +85,7 @@ class OAuth2AuthRequestTests: XCTestCase {
 		XCTAssertEqual(parts, Set(["a=AA", "c=A+complicated%2Fsurprising+name+%26+character%3Dfun"]))
 	}
 	
-	func testMultipleParamsWithSameKey() {
+	func testMultipleParamsWithSameKey() async {
 		let req = OAuth2AuthRequest(url: URL(string: "http://localhost")!)
 		req.params.setMultiple(key: "multiple", values: ["a", "b", "c"])
 		XCTAssertTrue(3 == req.params.getMultiple(forKey: "multiple").count)
@@ -97,7 +97,7 @@ class OAuth2AuthRequestTests: XCTestCase {
 		XCTAssertTrue(0 == req.params.getMultiple(forKey: "multiple").count)
 	}
 	
-	func testURLComponents() {
+	func testURLComponents() async {
 		let reqNoTLS = OAuth2AuthRequest(url: URL(string: "http://not.tls.com")!)
 		do {
 			_ = try reqNoTLS.asURLComponents()
@@ -135,7 +135,7 @@ class OAuth2AuthRequestTests: XCTestCase {
 		}
 	}
 	
-	func testRequests() {
+	func testRequests() async {
 		let settings = ["client_id": "id", "client_secret": "secret"]
 		let oauth = OAuth2(settings: settings)
 		let reqH = OAuth2AuthRequest(url: URL(string: "https://auth.io")!)
@@ -176,4 +176,3 @@ class OAuth2AuthRequestTests: XCTestCase {
 		}
 	}
 }
-

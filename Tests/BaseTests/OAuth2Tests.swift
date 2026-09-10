@@ -59,7 +59,7 @@ class OAuth2Tests: XCTestCase {
 		])
 	}
 	
-	func testInit() {
+	func testInit() async {
 		var oauth = OAuth2(settings: ["client_id": "def"])
 		XCTAssertFalse(oauth.verbose, "Non-verbose by default")
 		XCTAssertEqual(oauth.clientId, "def", "Must init `client_id`")
@@ -71,7 +71,7 @@ class OAuth2Tests: XCTestCase {
 		XCTAssertFalse(oauth.useKeychain, "Must not use keychain")
 	}
 	
-	func testAuthorizeURL() {
+	func testAuthorizeURL() async {
 		let oa = genericOAuth2()
 		oa.verbose = false
 		let auth = try! oa.authorizeURL(withRedirect: "oauth2app://callback", scope: "launch", params: ["extra": "param"])
@@ -88,7 +88,7 @@ class OAuth2Tests: XCTestCase {
 		XCTAssertEqual("param", params["extra"])
 	}
 	
-	func testTokenRequest() {
+	func testTokenRequest() async {
 		let oa = genericOAuth2()
 		oa.verbose = false
 		oa.clientConfig.refreshToken = "abc"
@@ -104,7 +104,7 @@ class OAuth2Tests: XCTestCase {
 		XCTAssertNil(params["state"], "Expecting no `state` in query")
 	}
 
-	func testTokenRefreshRequest() {
+	func testTokenRefreshRequest() async {
 		let oa = refreshOAuth2()
 		oa.verbose = false
 		oa.clientConfig.refreshToken = "abc"
@@ -145,7 +145,7 @@ class OAuth2Tests: XCTestCase {
 		#endif
 	}
 	
-	func testQueryParamParsing() {
+	func testQueryParamParsing() async {
 		let params1 = OAuth2.params(fromQuery: "access_token=xxx&expires=2015-00-00&more=stuff")
 		XCTAssert(3 == params1.count, "Expecting 3 URL params")
 		
@@ -175,7 +175,7 @@ class OAuth2Tests: XCTestCase {
 		XCTAssertEqual(params4["more"]!, "stuff1\nstuff2")
 	}
 	
-	func testQueryParamConversion() {
+	func testQueryParamConversion() async {
 		let qry = OAuth2RequestParams.formEncodedQueryStringFor(["a": "AA", "b": "BB", "x": "y\nz"])
 		XCTAssertEqual(17, qry.count, "Expecting a 17 character string")
 		
@@ -185,7 +185,7 @@ class OAuth2Tests: XCTestCase {
 		XCTAssertEqual(dict["x"]!, "y\nz", "Must unpack `x`")
 	}
 	
-	func testQueryParamEncoding() {
+	func testQueryParamEncoding() async {
 		let qry = OAuth2RequestParams.formEncodedQueryStringFor(["uri": "https://api.io", "str": "a string: cool!", "num": "3.14159"])
 		XCTAssertEqual(60, qry.count, "Expecting a 60 character string")
 		
@@ -195,7 +195,7 @@ class OAuth2Tests: XCTestCase {
 		XCTAssertEqual(dict["num"]!, "3.14159", "Must correctly unpack `num`")
 	}
 	
-	func testSessionConfiguration() {
+	func testSessionConfiguration() async {
 		final class SessDelegate: NSObject, URLSessionDelegate {
 		}
 		
