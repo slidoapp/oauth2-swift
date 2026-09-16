@@ -4,14 +4,14 @@ OAuth2
 [![Build Status](https://travis-ci.org/p2/OAuth2.svg?branch=main)](https://travis-ci.org/p2/OAuth2)
 [![License](https://img.shields.io/:license-apache-blue.svg)](LICENSE.txt)
 
-OAuth2 frameworks for **macOS**, **iOS** and **tvOS** written in Swift 5.
+OAuth2 frameworks for **macOS**, **iOS** and **tvOS** written in Swift 6.2.
 
 - [⤵️ Installation](#installation)
 - [🛠 Usage](#usage)
 - [🖥 Sample macOS app][sample] (with data loader examples)
 - [📖 Technical Documentation](https://p2.github.io/OAuth2)
 
-OAuth2 requires Xcode 12.4, the built framework can be used on **OS X 10.15**, **iOS 13**, **tvOS 13**, **watchOS 6** and later.
+OAuth2 requires Xcode 26, the built framework can be used on **OS X 10.15**, **iOS 13**, **tvOS 13**, **watchOS 6** and later.
 Happy to accept pull requests, please see [CONTRIBUTING.md](./Docs/CONTRIBUTING.md)
 
 ### Swift Version
