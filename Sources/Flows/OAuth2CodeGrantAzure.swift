@@ -29,19 +29,19 @@ import Base
 Azure requires a `resource`, hence our `init` requires it as well
 */
 public class OAuth2CodeGrantAzure: OAuth2CodeGrant {
-	
-	/**
-	Designated initializer.
-	
-	- parameter settings: The settings for this client
-	- parameter resource: The resource we want to use
-	*/
-	public init(settings: OAuth2JSON, resource: String) {
-		super.init(settings: settings)
-		clientConfig.secretInBody = true
-		clientConfig.customParameters = [
-			"resource": resource
-		]
-	}
+
+    /**
+    Designated initializer.
+
+    - parameter settings: The settings for this client
+    - parameter resource: The resource we want to use
+    */
+    public init(settings: OAuth2JSON, resource: String) {
+        super.init(settings: settings)
+        clientConfig.secretInBody = true
+        clientConfig.customParameters = [
+            "resource": resource
+        ]
+    }
 }
 

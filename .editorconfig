@@ -1,6 +1,6 @@
 # Swift source code
 [*.swift]
-indent_style = tab
+indent_style = space
 indent_size = 4
 
 # GitHub Actions workflow files

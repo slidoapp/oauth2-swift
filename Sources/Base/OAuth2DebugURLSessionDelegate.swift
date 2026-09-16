@@ -29,29 +29,29 @@ Still, sometimes you'll have to do this so this class is provided, but DO NOT SU
 Store. You have been warned!
 */
 final class OAuth2DebugURLSessionDelegate: NSObject, URLSessionDelegate {
-	
-	/// The host to allow a self-signed SSL certificate for.
-	let host: String
-	
-	
-	/** Designated initializer.
-	
-	- parameter host: The host to which the exception should apply
-	*/
-	public init(host: String) {
-		self.host = host
-	}
-	
-	func urlSession(_ session: URLSession, didReceive challenge: URLAuthenticationChallenge,
-	                     completionHandler: @escaping (Foundation.URLSession.AuthChallengeDisposition, URLCredential?) -> Void) {
-		if challenge.protectionSpace.authenticationMethod == NSURLAuthenticationMethodServerTrust {
-			if challenge.protectionSpace.host == host, let trust = challenge.protectionSpace.serverTrust {
-				let credential = URLCredential(trust: trust)
-				completionHandler(.useCredential, credential)
-				return
-			}
-		}
-		completionHandler(.performDefaultHandling, nil)
-	}
+
+    /// The host to allow a self-signed SSL certificate for.
+    let host: String
+
+
+    /** Designated initializer.
+
+    - parameter host: The host to which the exception should apply
+    */
+    public init(host: String) {
+        self.host = host
+    }
+
+    func urlSession(_ session: URLSession, didReceive challenge: URLAuthenticationChallenge,
+                         completionHandler: @escaping (Foundation.URLSession.AuthChallengeDisposition, URLCredential?) -> Void) {
+        if challenge.protectionSpace.authenticationMethod == NSURLAuthenticationMethodServerTrust {
+            if challenge.protectionSpace.host == host, let trust = challenge.protectionSpace.serverTrust {
+                let credential = URLCredential(trust: trust)
+                completionHandler(.useCredential, credential)
+                return
+            }
+        }
+        completionHandler(.performDefaultHandling, nil)
+    }
 }
 
