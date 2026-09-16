@@ -32,81 +32,81 @@ You can configure the mock performer to return specific JSON payloads, HTTP stat
 */
 class OAuth2MockPerformer: OAuth2RequestPerformer {
 
-	/// Type alias for a closure that generates a mocked response based on request parameters.
-	typealias ResponseDelegate = ((_ reqParams: OAuth2StringDict?) throws -> MockedResponse)
-	
-	/// The closure used to generate a mocked response for each request.
-	private let responseDelegate: ResponseDelegate
+    /// Type alias for a closure that generates a mocked response based on request parameters.
+    typealias ResponseDelegate = ((_ reqParams: OAuth2StringDict?) throws -> MockedResponse)
 
-	/**
-	Initializes the mock performer with a custom response delegate.
-	
-	- parameter responseDelegate: A closure that returns a `MockedResponse` based on request parameters. Defaults to a 200 OK response with no JSON body and no delay.
-	*/
-	init(_ responseDelegate: @escaping ResponseDelegate = { _ in MockedResponse() }) {
-		self.responseDelegate = responseDelegate
-	}
-	
-	/**
-	Convenience initializer to always return the same mocked response configured throught the `MockedResponse` confguration.
-	
-	- parameter response: The response configuration.
-	*/
-	convenience init(_ response: MockedResponse) {
-		self.init { _ in response }
-	}
-	
-	/**
-	Convenience initializer to always return the same JSON payload with a 200 OK status and no delay.
-	
-	- parameter responseJson: The JSON object to return in the response.
-	*/
-	convenience init(_ responseJson: OAuth2JSON) {
-		self.init { _ in .init(json: responseJson) }
-	}
-	
-	func perform(request: URLRequest) async throws -> (Data?, URLResponse) {
-		var params: OAuth2StringDict?
-		
-		/// Parse request body as URL-encoded parameters if present
-		if let reqBody = request.httpBody,let reqQuery = String(data: reqBody, encoding: .utf8) {
-			params = OAuth2Requestable.params(fromQuery: reqQuery)
-		}
+    /// The closure used to generate a mocked response for each request.
+    private let responseDelegate: ResponseDelegate
 
-		let response = try responseDelegate(params)
-		
-		let http = HTTPURLResponse(
-			url: request.url!,
-			statusCode: response.statusCode,
-			httpVersion: nil,
-			headerFields: nil
-		)!
-		
-		if let delay = response.delayMs {
-			try await Task.sleep(nanoseconds: delay * NSEC_PER_MSEC)
-		}
-				
-		guard let json = response.json else {
-			throw OAuth2Error.noDataInResponse
-		}
-		
-		let data = try JSONSerialization.data(withJSONObject: json)
-		return (data, http)
-	}
-	
-	/**
-	A structure representing a configuration of a mocked HTTP response
-	*/
-	struct MockedResponse {
-		/// The JSON payload to be returned in the mocked response. Defaults to `nil` (empty response).
-		var json: OAuth2JSON?
-		
-		/// The HTTP status code of the mocked response. Defaults to `200` (OK).
-		var statusCode = 200
-		
-		/// An optional artificial delay (in milliseconds) before the response is delivered. Defaults to `nil` (no delay is applied).
-		var delayMs: UInt64?
-	}
+    /**
+    Initializes the mock performer with a custom response delegate.
+
+    - parameter responseDelegate: A closure that returns a `MockedResponse` based on request parameters. Defaults to a 200 OK response with no JSON body and no delay.
+    */
+    init(_ responseDelegate: @escaping ResponseDelegate = { _ in MockedResponse() }) {
+        self.responseDelegate = responseDelegate
+    }
+
+    /**
+    Convenience initializer to always return the same mocked response configured throught the `MockedResponse` confguration.
+
+    - parameter response: The response configuration.
+    */
+    convenience init(_ response: MockedResponse) {
+        self.init { _ in response }
+    }
+
+    /**
+    Convenience initializer to always return the same JSON payload with a 200 OK status and no delay.
+
+    - parameter responseJson: The JSON object to return in the response.
+    */
+    convenience init(_ responseJson: OAuth2JSON) {
+        self.init { _ in .init(json: responseJson) }
+    }
+
+    func perform(request: URLRequest) async throws -> (Data?, URLResponse) {
+        var params: OAuth2StringDict?
+
+        /// Parse request body as URL-encoded parameters if present
+        if let reqBody = request.httpBody,let reqQuery = String(data: reqBody, encoding: .utf8) {
+            params = OAuth2Requestable.params(fromQuery: reqQuery)
+        }
+
+        let response = try responseDelegate(params)
+
+        let http = HTTPURLResponse(
+            url: request.url!,
+            statusCode: response.statusCode,
+            httpVersion: nil,
+            headerFields: nil
+        )!
+
+        if let delay = response.delayMs {
+            try await Task.sleep(nanoseconds: delay * NSEC_PER_MSEC)
+        }
+
+        guard let json = response.json else {
+            throw OAuth2Error.noDataInResponse
+        }
+
+        let data = try JSONSerialization.data(withJSONObject: json)
+        return (data, http)
+    }
+
+    /**
+    A structure representing a configuration of a mocked HTTP response
+    */
+    struct MockedResponse {
+        /// The JSON payload to be returned in the mocked response. Defaults to `nil` (empty response).
+        var json: OAuth2JSON?
+
+        /// The HTTP status code of the mocked response. Defaults to `200` (OK).
+        var statusCode = 200
+
+        /// An optional artificial delay (in milliseconds) before the response is delivered. Defaults to `nil` (no delay is applied).
+        var delayMs: UInt64?
+    }
 }
 
 

@@ -32,36 +32,36 @@ during configuration or by setting the `deviceId` property.
 https://github.com/reddit/reddit/wiki/OAuth2#application-only-oauth
 */
 public class OAuth2ClientCredentialsReddit: OAuth2ClientCredentials {
-	
-	override public class var grantType: String {
-		return "https://oauth.reddit.com/grants/installed_client"
-	}
-	
-	/// An identifier of the device requesting the token. You should generate and save a unique ID on your client. DO NOT use any personally
-	/// identifiable information (including non-user-resettable information, such as Android's TelephonyManager.getDeviceId() or iOS's IDFA).
-	public var deviceId: String?
-	
-	
-	/**
-	The special Reddit client credentials flow for installed apps adds the `device_id` key to the settings dictionary.
-	
-	- parameter settings: The authorization settings
-	*/
-	override public init(settings: OAuth2JSON) {
-		deviceId = settings["device_id"] as? String
-		super.init(settings: settings)
-		clientConfig.clientSecret = ""
-	}
-	
-	/** Add `device_id` parameter to the request created by the superclass. */
-	override open func accessTokenRequest(params: OAuth2StringDict? = nil) throws -> OAuth2AuthRequest {
-		guard let device = deviceId else {
-			throw OAuth2Error.generic("You must configure this flow with a `device_id` (via settings) or manually assign `deviceId`")
-		}
-		
-		let req = try super.accessTokenRequest(params: params)
-		req.params["device_id"] = device
-		return req
-	}
+
+    override public class var grantType: String {
+        return "https://oauth.reddit.com/grants/installed_client"
+    }
+
+    /// An identifier of the device requesting the token. You should generate and save a unique ID on your client. DO NOT use any personally
+    /// identifiable information (including non-user-resettable information, such as Android's TelephonyManager.getDeviceId() or iOS's IDFA).
+    public var deviceId: String?
+
+
+    /**
+    The special Reddit client credentials flow for installed apps adds the `device_id` key to the settings dictionary.
+
+    - parameter settings: The authorization settings
+    */
+    override public init(settings: OAuth2JSON) {
+        deviceId = settings["device_id"] as? String
+        super.init(settings: settings)
+        clientConfig.clientSecret = ""
+    }
+
+    /** Add `device_id` parameter to the request created by the superclass. */
+    override open func accessTokenRequest(params: OAuth2StringDict? = nil) throws -> OAuth2AuthRequest {
+        guard let device = deviceId else {
+            throw OAuth2Error.generic("You must configure this flow with a `device_id` (via settings) or manually assign `deviceId`")
+        }
+
+        let req = try super.accessTokenRequest(params: params)
+        req.params["device_id"] = device
+        return req
+    }
 }
 

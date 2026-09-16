@@ -26,24 +26,24 @@ Platform-dependent authorizers must adopt this protocol.
 */
 @OAuth2Actor
 public protocol OAuth2AuthorizerUI {
-	
-	/// The OAuth2 instance this authorizer belongs to.
-	var oauth2: OAuth2Base { get }
-	
-	/**
-	Open the authorize URL in the OS browser.
-	
-	- parameter url: The authorize URL to open
-	- throws:        UnableToOpenAuthorizeURL on failure
-	*/
-	func openAuthorizeURLInBrowser(_ url: URL) throws
-	
-	/**
-	Tries to use the given context to present the authorization screen. Context could be a UIViewController for iOS or an NSWindow on macOS.
-	
-	- parameter with: The configuration to be used; usually uses the instance's `authConfig`
-	- parameter at:   The authorize URL to open
-	- throws:         Can throw OAuth2Error if the method is unable to show the authorize screen
-	*/
-	func authorizeEmbedded(with config: OAuth2AuthConfig, at url: URL) async throws
+
+    /// The OAuth2 instance this authorizer belongs to.
+    var oauth2: OAuth2Base { get }
+
+    /**
+    Open the authorize URL in the OS browser.
+
+    - parameter url: The authorize URL to open
+    - throws:        UnableToOpenAuthorizeURL on failure
+    */
+    func openAuthorizeURLInBrowser(_ url: URL) throws
+
+    /**
+    Tries to use the given context to present the authorization screen. Context could be a UIViewController for iOS or an NSWindow on macOS.
+
+    - parameter with: The configuration to be used; usually uses the instance's `authConfig`
+    - parameter at:   The authorize URL to open
+    - throws:         Can throw OAuth2Error if the method is unable to show the authorize screen
+    */
+    func authorizeEmbedded(with config: OAuth2AuthConfig, at url: URL) async throws
 }

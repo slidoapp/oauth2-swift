@@ -38,78 +38,78 @@ import Logging
 
 @OAuth2Actor
 class OAuth2DataLoaderTests: XCTestCase {
-	
-	var oauth2: OAuth2PasswordGrant?
-	
-	var loader: OAuth2DataLoader?
-			
-	override func setUp() async throws {
-		let response: OAuth2JSON = [
-			"access_token": "toktok",
-			"token_type": "bearer"
-		]
-		oauth2 = OAuth2PasswordGrant(settings: [
-			"client_id": "abc",
-			"authorize_url": "https://oauth.io/authorize",
-			"keychain": false
-		] as OAuth2JSON)
-		oauth2!.logger = Logger(label: "OAuth2DataLoaderTests")
-		oauth2!.username = "p2"
-		oauth2!.password = "test"
-		oauth2!.requestPerformer = OAuth2MockPerformer(response)
-		
-		loader = OAuth2DataLoader(oauth2: oauth2!)
-		loader!.requestPerformer = OAuth2AnyBearerPerformer()
-	}
-	
-	func testAutoEnqueue() async {
-		XCTAssertNil(oauth2!.accessToken)
-		let req1 = oauth2!.request(forURL: URL(string: "http://auth.io/data/user")!)
-		let wait1 = expectation(description: "req1")
-		loader!.perform(request: req1) { response in
-			XCTAssertNotNil(self.oauth2!.accessToken)
-			do {
-				let json = try response.responseJSON()
-				XCTAssertNotNil(json["data"])
-			}
-			catch let error {
-				XCTAssertNil(error)
-			}
-			wait1.fulfill()
-		}
-		
-		let req2 = oauth2!.request(forURL: URL(string: "http://auth.io/data/home")!)
-		let wait2 = expectation(description: "req2")
-		loader!.perform(request: req2) { response in
-			XCTAssertNotNil(self.oauth2!.accessToken)
-			do {
-				let json = try response.responseJSON()
-				XCTAssertNotNil(json["data"])
-			}
-			catch let error {
-				XCTAssertNil(error)
-			}
-			wait2.fulfill()
-		}
-		
-		/// Asynchronously await for the expectation to fulfill.
-		await fulfillment(of: [wait1, wait2], timeout: 4.0)
-	}
+
+    var oauth2: OAuth2PasswordGrant?
+
+    var loader: OAuth2DataLoader?
+
+    override func setUp() async throws {
+        let response: OAuth2JSON = [
+            "access_token": "toktok",
+            "token_type": "bearer"
+        ]
+        oauth2 = OAuth2PasswordGrant(settings: [
+            "client_id": "abc",
+            "authorize_url": "https://oauth.io/authorize",
+            "keychain": false
+        ] as OAuth2JSON)
+        oauth2!.logger = Logger(label: "OAuth2DataLoaderTests")
+        oauth2!.username = "p2"
+        oauth2!.password = "test"
+        oauth2!.requestPerformer = OAuth2MockPerformer(response)
+
+        loader = OAuth2DataLoader(oauth2: oauth2!)
+        loader!.requestPerformer = OAuth2AnyBearerPerformer()
+    }
+
+    func testAutoEnqueue() async {
+        XCTAssertNil(oauth2!.accessToken)
+        let req1 = oauth2!.request(forURL: URL(string: "http://auth.io/data/user")!)
+        let wait1 = expectation(description: "req1")
+        loader!.perform(request: req1) { response in
+            XCTAssertNotNil(self.oauth2!.accessToken)
+            do {
+                let json = try response.responseJSON()
+                XCTAssertNotNil(json["data"])
+            }
+            catch let error {
+                XCTAssertNil(error)
+            }
+            wait1.fulfill()
+        }
+
+        let req2 = oauth2!.request(forURL: URL(string: "http://auth.io/data/home")!)
+        let wait2 = expectation(description: "req2")
+        loader!.perform(request: req2) { response in
+            XCTAssertNotNil(self.oauth2!.accessToken)
+            do {
+                let json = try response.responseJSON()
+                XCTAssertNotNil(json["data"])
+            }
+            catch let error {
+                XCTAssertNil(error)
+            }
+            wait2.fulfill()
+        }
+
+        /// Asynchronously await for the expectation to fulfill.
+        await fulfillment(of: [wait1, wait2], timeout: 4.0)
+    }
 }
 
 class OAuth2AnyBearerPerformer: OAuth2RequestPerformer {
-	
-	func perform(request: URLRequest) async throws -> (Data?, URLResponse) {
-		let authorized = (nil != request.value(forHTTPHeaderField: "Authorization"))
-		let status = authorized ? 201 : 401
-		let http = HTTPURLResponse(url: request.url!, statusCode: status, httpVersion: nil, headerFields: nil)!
-		if authorized {
-			let data = try? JSONSerialization.data(withJSONObject: ["data": ["in": "response"]], options: [])
-			return (data, http)
-		}
-		else {
-			return (nil, http)
-		}
-	}
+
+    func perform(request: URLRequest) async throws -> (Data?, URLResponse) {
+        let authorized = (nil != request.value(forHTTPHeaderField: "Authorization"))
+        let status = authorized ? 201 : 401
+        let http = HTTPURLResponse(url: request.url!, statusCode: status, httpVersion: nil, headerFields: nil)!
+        if authorized {
+            let data = try? JSONSerialization.data(withJSONObject: ["data": ["in": "response"]], options: [])
+            return (data, http)
+        }
+        else {
+            return (nil, http)
+        }
+    }
 }
 

@@ -27,7 +27,7 @@ import Base
 Subclass to deal with sites that don't return `token_type`, such as Instagram or Bitly.
 */
 public class OAuth2CodeGrantNoTokenType: OAuth2CodeGrant {
-	
-	override open func assureCorrectBearerType(_ params: OAuth2JSON) throws {
-	}
+
+    override open func assureCorrectBearerType(_ params: OAuth2JSON) throws {
+    }
 }
